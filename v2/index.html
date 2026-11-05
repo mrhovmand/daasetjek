@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Dåsetjek 2">
+<meta name="theme-color" content="#0f766e">
+<meta name="robots" content="noindex,nofollow">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<title>Dåsetjek 2 – el-indstøbningsdåser og tegninger</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1c1f24;--mut:#6b7280;--line:#d9dde3;--ok:#15803d;--bad:#b91c1c;--warn:#b45309;--acc:#1d4ed8}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:env(safe-area-inset-bottom)}
+header{position:sticky;top:0;background:#0f766e;color:#fff;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));z-index:5}
+header h1{font-size:19px;margin:0}header small{color:#cbd5e1}
+.wrap{max-width:760px;margin:0 auto;padding:12px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.tabs button{border:1px solid var(--line);background:var(--card);padding:10px 14px;min-height:44px;border-radius:22px;font-size:16px;color:var(--ink)}
+.tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.card{scroll-margin-top:120px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input,textarea,select{font-size:16px;padding:10px;border:1px solid var(--line);border-radius:8px;width:100%;font-family:inherit;min-height:44px}
+textarea{min-height:70px}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--card);padding:10px 14px;min-height:44px;border-radius:8px;font-size:16px;cursor:pointer;color:var(--ink)}
+.btn.p{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn.d{color:var(--bad)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line);background:#fff;padding:10px 14px;min-height:44px;border-radius:8px;font-size:16px;color:var(--ink);flex:1 1 auto}
+.seg button.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.seg button.bad{background:var(--bad);color:#fff;border-color:var(--bad)}
+.seg button.z{flex:0 0 auto;color:var(--mut)}
+.lbl{font-size:14px;color:var(--mut);margin:10px 0 5px}
+.pill{font-size:13px;padding:3px 9px;border-radius:10px;background:#eef0f3;color:var(--mut);white-space:nowrap}
+.pill.ok{background:#dcfce7;color:var(--ok)}.pill.bad{background:#fee2e2;color:var(--bad)}.pill.w{background:#fef3c7;color:var(--warn)}
+table{width:100%;border-collapse:collapse;font-size:15px}td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+td a{display:inline-block;padding:4px 0}
+h2{font-size:17px;margin:4px 0 8px}
+.mut{color:var(--mut);font-size:14px}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.thumbs img{width:76px;height:76px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer;background:#eee}
+.addph{position:relative;overflow:hidden}
+.addph input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;font-size:0}
+#viewer{position:fixed;inset:0;background:#000;z-index:50;display:none;flex-direction:column;padding:calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom))}
+#viewer.on{display:flex}
+#viewer .img{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+#viewer img{max-width:100%;max-height:100%;object-fit:contain}
+#viewer .bar{display:flex;gap:8px;justify-content:space-between;color:#fff;padding:8px 0}
+#viewer .btn{background:#222;color:#fff;border-color:#444}
+#viewer .btn.d{color:#fca5a5}
+.busy{opacity:.6;pointer-events:none}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;font-size:15px;z-index:60;display:none}
+.printonly{display:none}
+@media print{header,.tabs,.noprint,#viewer,#toast{display:none!important}.printonly{display:block}.card{break-inside:avoid}body{background:#fff}.thumbs img{width:110px;height:110px}input,textarea{border:none;padding:0;min-height:0}}
+
+.top{display:flex;gap:8px;align-items:center}
+.top select{flex:1;font-weight:600;background:#fff}
+.top .btn{flex:0 0 auto}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.chips button{border:1px solid var(--line);background:#fff;padding:8px 12px;min-height:40px;border-radius:18px;font-size:15px;color:var(--ink)}
+.chips button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tblw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ov td,.ov th{text-align:center;white-space:nowrap;padding:8px 5px}.ov td:first-child,.ov th:first-child{text-align:left}
+.ov td.c{cursor:pointer}.ov td.c b{color:var(--bad)}
+#dlg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:none;align-items:flex-end;justify-content:center}
+#dlg.on{display:flex}
+#dlg .sheet{background:var(--card);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+#upd{position:fixed;left:10px;right:10px;top:calc(8px + env(safe-area-inset-top));background:var(--acc);color:#fff;border-radius:12px;padding:10px 14px;z-index:70;display:none;align-items:center;justify-content:space-between;gap:10px;font-size:16px}
+#upd.on{display:flex}#upd button{background:#fff;color:var(--acc);border:none;border-radius:8px;padding:10px 14px;font-size:16px;font-weight:600;min-height:44px}
+/* tegninger */
+#tgv{position:fixed;inset:0;background:#2b2f36;z-index:55;display:none;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#tgv.on{display:flex}
+#tgv .tbar{display:flex;gap:6px;align-items:center;padding:6px 8px;color:#fff;background:#1c1f24}
+#tgv .tbar .btn{background:#2f343c;color:#fff;border-color:#444;padding:8px 12px;min-width:44px}
+#tgv .tbar .btn:disabled{opacity:.35}
+#tgcap{flex:1;font-size:14px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#tgstage{flex:1;position:relative;overflow:hidden;touch-action:none;background:#5b616b;-webkit-user-select:none;user-select:none}
+#tgstage canvas{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none}
+#tgbase{background:#fff;box-shadow:0 0 12px rgba(0,0,0,.4)}
+#tgmsg{position:absolute;left:50%;top:40%;transform:translateX(-50%);color:#fff;background:rgba(0,0,0,.6);padding:10px 14px;border-radius:10px;font-size:15px;text-align:center;max-width:85%;display:none;z-index:2}
+#tgzl{position:absolute;right:8px;bottom:8px;color:#fff;background:rgba(0,0,0,.5);padding:3px 8px;border-radius:8px;font-size:12px;z-index:2}
+.tgc .btn{padding:8px 12px}
+.qn{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.qn button{border:1px solid var(--line);background:#fff;padding:6px 10px;min-height:36px;border-radius:16px;font-size:14px;color:var(--ink)}
+.qn button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.note{background:#ecfdf5;border-color:#a7f3d0}.note.w{background:#fffbeb;border-color:#fcd34d}
+.sec{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);margin:16px 0 4px}
+</style>
+</head>
+<body>
+<div id="upd"><span>Ny version af Dåsetjek 2</span><button onclick="location.reload()">Genindlæs</button></div>
+<header><h1>Dåsetjek 2</h1><small id="ogsub"></small></header>
+<div class="wrap">
+  <div class="card noprint">
+    <div class="lbl" style="margin-top:0">Opgang</div>
+    <div class="top"><select id="ogsel" onchange="pickOg(this.value)" aria-label="Vælg opgang"></select><button class="btn" onclick="ogDialog(S.cur)" aria-label="Opsætning">⚙︎</button><button class="btn p" onclick="ogDialog()">+ Ny</button></div>
+    <div class="lbl">Byggeplads / projekt</div>
+    <input id="proj" placeholder="Fx adresse eller sagsnr.">
+  </div>
+  <div class="printonly"><h2 id="ptitle"></h2></div>
+  <div class="tabs" id="tabs"></div>
+  <div id="main"></div>
+  <div class="card noprint">
+    <h2>Data</h2>
+    <p class="mut">Alt gemmes automatisk på denne telefon, også billederne. Tag en backup jævnligt (fx til Filer eller som mail til dig selv). Dåsetjek 2 har sin egen hukommelse – den gamle Dåsetjek ændres ikke.</p>
+    <div class="row">
+      <button class="btn" onclick="exportCSV()">Eksportér CSV (Excel)</button>
+      <button class="btn" onclick="printAll()">Udskriv / gem PDF</button>
+      <button class="btn" onclick="backup()">Gem backup</button>
+      <label class="btn addph">Indlæs backup<input type="file" accept=".json,application/json" onchange="restore(event)"></label>
+      <button class="btn" onclick="recopy()">Hent data fra Dåsetjek 1</button>
+    </div>
+    <p class="mut" id="stor"></p>
+  </div>
+</div>
+<div id="dlg" onclick="if(event.target===this)closeDlg()"><div class="sheet" id="sheet"></div></div>
+<div id="viewer" onclick="if(event.target===this||event.target.classList.contains('img'))closeViewer()">
+  <div class="bar"><span id="vcap"></span><button class="btn" onclick="closeViewer()">Luk</button></div>
+  <div class="img"><img id="vimg" alt=""></div>
+  <div class="bar"><button class="btn" id="vprev" onclick="stepViewer(-1)">‹ Forrige</button><button class="btn d" onclick="delPhoto()">Slet billede</button><button class="btn" id="vnext" onclick="stepViewer(1)">Næste ›</button></div>
+</div>
+<div id="toast"></div>
+<div id="tgv">
+  <div class="tbar"><button class="btn" onclick="tgClose()">‹ Luk</button><div id="tgcap"></div></div>
+  <div id="tgstage"><canvas id="tgbase"></canvas><div id="tgmsg"></div><div id="tgzl"></div></div>
+  <div class="tbar" style="justify-content:space-between"><button class="btn" id="tgprev" onclick="tgStep(-1)">‹</button><button class="btn" onclick="tgZoomBy(1/1.8)">−</button><button class="btn" onclick="tgReset()">Tilpas</button><button class="btn" onclick="tgZoomBy(1.8)">+</button><button class="btn" id="tgnext" onclick="tgStep(1)">›</button></div>
+</div>
+
+<script>
+/* ===== Konstanter ===== */
+const STUE_PREFIX="st";                       // præfiks for stuelejligheder ved 4–6 boliger: st.1, st.2 …
+const UNITS_23={2:["tv.","th."],3:["tv.","mf.","th."]};
+const TAGCAT=["Solceller","Røgopluk","Gennemføring","Andet"];
+const KEY="daasetjek2_v1";                      // Dåsetjek 2 har sin EGEN nøgle
+const OLDKEY3="daasetjek_v3",OLDKEY1="daasetjek_v1",OLDDB="daasetjek_photos"; // Dåsetjek 1: læses kun, ændres aldrig
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",2500)}
+function now(){const d=new Date();return d.toLocaleDateString("da-DK")+" "+d.toLocaleTimeString("da-DK",{hour:"2-digit",minute:"2-digit"})}
+
+/* ===== Data og migrering ===== */
+function newOg(name){return {id:"og"+uid(),name:name||"Opgang 1",units:2,top:3,kaelder:false,tgB:"",tgO:""}}
+function migrate(old){ // v1/v2: {proj,boxes:[{loc:"Stue|Bolig TV",...}]}
+  const og={id:"og1",name:"Opgang 1",units:2,top:3,kaelder:false};
+  const FL=["Stue","1. sal","2. sal","3. sal"],UN={"Bolig TV":"1","Bolig TH":"2","Opgang":"OG"};
+  const boxes=(old.boxes||[]).map(b=>{const[f,u]=String(b.loc||"").split("|");const i=FL.indexOf(f);const n={...b,og:og.id,fl:String(i<0?0:i),un:UN[u]||"OG"};delete n.loc;return n});
+  return {v:3,proj:old.proj||"",ogs:[og],boxes,tag:[],cur:og.id,view:"oversigt",uf:""}}
+function fix(s){s.v=3;s.ogs=Array.isArray(s.ogs)&&s.ogs.length?s.ogs:[newOg()];s.boxes=s.boxes||[];s.tag=s.tag||[];if(!s.ogs.find(o=>o.id===s.cur))s.cur=s.ogs[0].id;s.view=s.view||"oversigt";s.ogs.forEach(o=>{o.tgB=o.tgB||"";o.tgO=o.tgO||""});s.tg=s.tg&&typeof s.tg==="object"?s.tg:{};s.tg.names=s.tg.names||{};return s}
+let S;
+function readOld(){ // kopi af Dåsetjek 1's data (kun læsning)
+  let o=null;try{o=JSON.parse(localStorage.getItem(OLDKEY3)||"null")}catch(e){}
+  if(o&&Array.isArray(o.ogs))return fix(JSON.parse(JSON.stringify(o)));
+  let o1=null;try{o1=JSON.parse(localStorage.getItem(OLDKEY1)||"null")}catch(e){}
+  return o1&&Array.isArray(o1.boxes)?migrate(o1):null}
+(function(){let r=null;try{r=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){}
+  let first=null;if(!r){r=readOld();first=r?"copied":"none"}
+  S=fix(r||{proj:""});if(first){S.notice=first;S.photoCopy=first==="copied"?"pending":"";S.view="oversigt"}
+  localStorage.setItem(KEY,JSON.stringify(S))})();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast("Kunne ikke gemme: "+e.message)}}
+
+/* ===== Navne ===== */
+const og=()=>S.ogs.find(o=>o.id===S.cur);
+const ogById=id=>S.ogs.find(o=>o.id===id);
+function flName(f){return f==="K"?"Kælder":f==="0"?"Stue":f+". sal"}
+function floorsOf(o){const l=o.kaelder?["K"]:[];for(let i=0;i<=o.top;i++)l.push(String(i));return l}
+function unitsOf(o,f){if(f==="K")return["OG"];const l=[];for(let i=1;i<=o.units;i++)l.push(String(i));l.push("OG");return l}
+function unName(o,f,u){if(u==="OG")return f==="K"?"Kælder/opgang":"Opgang";const i=+u;if(o.units<=3)return (UNITS_23[o.units]||[])[i-1]||("bolig "+i);return (f==="0"?STUE_PREFIX:f)+"."+i}
+function colName(o,u){if(u==="OG")return"Opgang";return o.units<=3?(UNITS_23[o.units]||[])[+u-1]||u:"Bolig "+u}
+function hidden(b,o){o=o||ogById(b.og);if(!o)return true;if(b.fl==="K")return !o.kaelder||b.un!=="OG";if(+b.fl>o.top)return true;return b.un!=="OG"&&+b.un>o.units}
+function where(b){const o=ogById(b.og);return (o?o.name:"?")+" · "+flName(b.fl)+" · "+(o?unName(o,b.fl,b.un):b.un)}
+
+/* ===== Status ===== */
+function stat(b){if(b.plac==="forkert"||b.ror==="afvigelse")return["bad","Afvigelse"];if(b.plac==="ok"&&b.ror==="ok")return["ok","Godkendt"];if(b.plac||b.ror)return["w","Delvist"];return["","Ikke tjekket"]}
+function tstat(t){return t.status==="afvigelse"?["bad","Afvigelse"]:t.status==="ok"?["ok","OK"]:t.status==="note"?["w","Note"]:["","Ikke vurderet"]}
+function counts(list){let c={n:list.length,ok:0,bad:0,open:0};list.forEach(b=>{const s=stat(b)[0];if(s==="ok")c.ok++;else if(s==="bad")c.bad++;else c.open++});return c}
+
+/* ===== Billeder i IndexedDB (nøgle = dåse- eller tag-id) ===== */
+const DBN="daasetjek2_photos",ST="photos";let DB=null;let P={};const URLS={};
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DBN,1);r.onupgradeneeded=()=>{const s=r.result.createObjectStore(ST,{keyPath:"id"});s.createIndex("boxId","boxId")};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function tx(mode,fn){return new Promise((res,rej)=>{const t=DB.transaction(ST,mode);const s=t.objectStore(ST);let out;const r=fn(s);if(r)r.onsuccess=()=>out=r.result;t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)})}
+async function loadPhotos(){const all=await tx("readonly",s=>s.getAll());P={};(all||[]).sort((a,b)=>a.t-b.t).forEach(p=>{(P[p.boxId]=P[p.boxId]||[]).push(p)})}
+function openOldDB(){return new Promise(res=>{let r;try{r=indexedDB.open(OLDDB)}catch(e){return res(null)}
+  r.onupgradeneeded=()=>{try{r.transaction.abort()}catch(e){}};  // findes den ikke, oprettes den IKKE
+  r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null)})}
+async function copyOldPhotos(){const odb=await openOldDB();if(!odb)return 0;let all=[];
+  try{if(odb.objectStoreNames.contains("photos"))all=await new Promise((res,rej)=>{const q=odb.transaction("photos","readonly").objectStore("photos").getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error)})}finally{odb.close()}
+  for(const p of all){await tx("readwrite",s=>s.put({id:p.id,boxId:p.boxId,t:p.t,blob:p.blob}))}return all.length}
+async function recopy(){const r=readOld();
+  if(!r){alert("Der er ingen data fra Dåsetjek 1 her.\n\nPå iPhone har hver app på hjemmeskærmen sin egen hukommelse. Gør sådan:\n1) Åbn Dåsetjek 1 og tryk 'Gem backup'.\n2) Åbn Dåsetjek 2 og tryk 'Indlæs backup'.");return}
+  if(!confirm("Erstat alt i Dåsetjek 2 med data fra Dåsetjek 1 ("+r.ogs.length+" opgange, "+r.boxes.length+" dåser, inkl. billeder)?\n\nDine navne på tegninger beholdes. Dåsetjek 1 ændres ikke."))return;
+  const tg=S.tg;const links={};S.ogs.forEach(o=>links[o.id]={tgB:o.tgB,tgO:o.tgO});
+  S=fix(r);S.tg=tg;S.ogs.forEach(o=>{if(links[o.id]){o.tgB=links[o.id].tgB;o.tgO=links[o.id].tgO}});save();
+  try{Object.values(URLS).forEach(u=>URL.revokeObjectURL(u));for(const k in URLS)delete URLS[k];await tx("readwrite",s=>s.clear());const n=await copyOldPhotos();await loadPhotos();S.copiedPhotos=n;S.notice="copied";save()}catch(x){alert("Billederne kunne ikke kopieres: "+x.message)}
+  $("proj").value=S.proj||"";render();updStorage()}
+function noticeHTML(){if(S.notice==="copied"){const n=S.boxes.length;return `<div class="card note noprint"><b>✅ Data kopieret fra Dåsetjek 1</b><p class="mut" style="margin:6px 0">${S.ogs.length} opgange, ${n} dåser og ${S.photoCopy==="pending"?"billeder (kopieres…)":(S.copiedPhotos||0)+" billeder"}. Den gamle Dåsetjek er uændret – men det du registrerer herfra, gemmes kun i Dåsetjek 2.</p><button class="btn" onclick="S.notice='';save();render()">OK</button></div>`}
+  if(S.notice==="none")return `<div class="card note w noprint"><b>Velkommen til Dåsetjek 2 – nu med tegninger</b><p class="mut" style="margin:6px 0">Der blev ikke fundet data fra Dåsetjek 1 her. På iPhone har hver app på hjemmeskærmen sin egen hukommelse. Vil du have dine opgange med over: åbn Dåsetjek 1 → <b>Gem backup</b> → åbn Dåsetjek 2 → <b>Indlæs backup</b> (nederst under Data).</p><button class="btn" onclick="S.notice='';save();render()">OK</button></div>`;return ""}
+function pcount(id){return (P[id]||[]).length}
+function purl(p){return URLS[p.id]||(URLS[p.id]=URL.createObjectURL(p.blob))}
+function compress(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file);const img=new Image();img.onload=()=>{const M=1600;let w=img.naturalWidth,h=img.naturalHeight;const k=Math.min(1,M/Math.max(w,h));w=Math.round(w*k);h=Math.round(h*k);const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(new Error("Kunne ikke komprimere")),"image/jpeg",0.75)};img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("Ukendt billedformat"))};img.src=u})}
+function item(id){return S.boxes.find(b=>b.id===id)||S.tag.find(t=>t.id===id)}
+async function addPhotos(id,input){const files=[...input.files];input.value="";if(!files.length)return;const card=$("b_"+id);card&&card.classList.add("busy");let n=0;
+  for(const f of files){try{const blob=await compress(f);const p={id:uid(),boxId:id,t:Date.now(),blob};await tx("readwrite",s=>s.put(p));(P[id]=P[id]||[]).push(p);n++}catch(e){alert("Billedet kunne ikke gemmes: "+e.message)}}
+  const b=item(id);if(b){b.tid=now();save()}render();if(n)toast(n===1?"Billede gemt":n+" billeder gemt");updStorage()}
+async function deletePhotosOf(id){for(const p of (P[id]||[])){await tx("readwrite",s=>s.delete(p.id));if(URLS[p.id]){URL.revokeObjectURL(URLS[p.id]);delete URLS[p.id]}}delete P[id]}
+let V={box:null,i:0};
+function openViewer(id,i){V={box:id,i};showViewer();$("viewer").classList.add("on")}
+function showViewer(){const l=P[V.box]||[];if(!l.length){closeViewer();return}V.i=(V.i+l.length)%l.length;$("vimg").src=purl(l[V.i]);const b=S.boxes.find(x=>x.id===V.box),t=S.tag.find(x=>x.id===V.box);$("vcap").textContent=(b?"Dåse "+b.nr+" · ":t?(t.title||t.cat)+" · ":"")+"Billede "+(V.i+1)+" af "+l.length;$("vprev").style.visibility=$("vnext").style.visibility=l.length>1?"visible":"hidden"}
+function stepViewer(d){V.i+=d;showViewer()}
+function closeViewer(){$("viewer").classList.remove("on");$("vimg").removeAttribute("src")}
+async function delPhoto(){const l=P[V.box]||[];const p=l[V.i];if(!p||!confirm("Slet dette billede?"))return;await tx("readwrite",s=>s.delete(p.id));l.splice(V.i,1);if(URLS[p.id]){URL.revokeObjectURL(URLS[p.id]);delete URLS[p.id]}if(!l.length){delete P[V.box];closeViewer()}else showViewer();render();updStorage()}
+function photoBlock(id){const l=P[id]||[];return `<div class="lbl">Billeder${l.length?" ("+l.length+")":""}</div>`+(l.length?`<div class="thumbs">${l.map((p,i)=>`<img src="${purl(p)}" alt="Billede ${i+1}" onclick="openViewer('${id}',${i})">`).join("")}</div>`:"")}
+function addPhotoBtn(id){return `<label class="btn p addph">📷 Tilføj billede<input type="file" accept="image/*" multiple onchange="addPhotos('${id}',this)"></label>`}
+
+/* ===== Visning ===== */
+$("proj").value=S.proj||"";$("proj").oninput=e=>{S.proj=e.target.value;save()};
+function ogSel(){const o=og();$("ogsel").innerHTML=S.ogs.map(x=>`<option value="${x.id}"${x.id===S.cur?" selected":""}>${esc(x.name)}</option>`).join("");
+  $("ogsub").textContent=`${o.units} boliger pr. etage · ${o.kaelder?"kælder + ":""}stue til ${o.top?o.top+". sal":"stue"}${o.tgB?" · tegninger "+o.tgB+(o.tgO?" Byg "+o.tgO:""):""}`}
+function pickOg(id){S.cur=id;S.view="oversigt";S.uf="";save();render();scrollTo(0,0)}
+function tabs(){const o=og();let h=`<button class="${S.view==="oversigt"?"on":""}" onclick="go('oversigt')">Oversigt</button>`;
+  floorsOf(o).forEach(f=>h+=`<button class="${S.view==="f:"+f?"on":""}" onclick="go('f:${f}')">${flName(f)}</button>`);
+  const tn=S.tag.filter(t=>t.og===o.id).length;h+=`<button class="${S.view==="tag"?"on":""}" onclick="go('tag')">Tag${tn?" ("+tn+")":""}</button>`;
+  const nb=S.boxes.filter(b=>stat(b)[0]==="bad").length+S.tag.filter(t=>t.status==="afvigelse").length;
+  h+=`<button class="${S.view==="afvig"?"on":""}" onclick="go('afvig')">Afvigelser${nb?" ("+nb+")":""}</button>`;h+=`<button class="${S.view==="tegn"?"on":""}" onclick="goTegn()">📐 Tegninger</button>`;$("tabs").innerHTML=h}
+function go(v,uf){S.view=v;S.uf=uf||"";save();render();scrollTo(0,0)}
+function boxHTML(b,ctx){const [c,t]=stat(b);const pc=pcount(b.id);return `<div class="card" id="b_${b.id}">
+${ctx?`<div class="mut" style="margin-bottom:4px">${esc(ctx)}</div>`:""}<div class="row" style="justify-content:space-between"><b>Dåse ${esc(b.nr)}${b.rum?` <span class="mut">· ${esc(b.rum)}</span>`:""}</b><span class="row" style="gap:6px">${pc?`<span class="pill">📷 ${pc}</span>`:""}<span class="pill ${c}">${t}</span></span></div>
+<div class="row noprint" style="margin-top:8px"><input value="${esc(b.nr)}" placeholder="Nr./ID" style="flex:1;min-width:90px" oninput="upd('${b.id}','nr',this.value)"><input value="${esc(b.rum)}" placeholder="Rum (fx køkken, stue)" style="flex:2;min-width:140px" oninput="upd('${b.id}','rum',this.value)"></div>
+<div class="lbl">1) Sidder dåsen på den rigtige placering?</div>
+<div class="seg"><button class="${b.plac==="ok"?"ok":""}" onclick="set('${b.id}','plac','ok')">Ja, korrekt</button><button class="${b.plac==="forkert"?"bad":""}" onclick="set('${b.id}','plac','forkert')">Nej, forkert</button><button class="z noprint" onclick="set('${b.id}','plac','')">Nulstil</button></div>
+<div class="lbl">2) Rør og udførelse</div>
+<div class="seg"><button class="${b.ror==="ok"?"ok":""}" onclick="set('${b.id}','ror','ok')">OK</button><button class="${b.ror==="afvigelse"?"bad":""}" onclick="set('${b.id}','ror','afvigelse')">Afvigelse</button><button class="z noprint" onclick="set('${b.id}','ror','')">Nulstil</button></div>
+<div class="lbl">Note: kommentar til rørene og udførelsen</div>
+<textarea placeholder="Fx rør knækket, mangler tilslutning, for lidt dækning…" oninput="upd('${b.id}','kom',this.value)">${esc(b.kom)}</textarea>
+${photoBlock(b.id)}
+<div class="row noprint" style="justify-content:space-between;margin-top:10px">${addPhotoBtn(b.id)}<button class="btn d" onclick="del('${b.id}')">Slet dåse</button></div>
+<div class="mut" style="margin-top:6px">${b.tid?"Senest ændret "+esc(b.tid):""}</div></div>`}
+function tagHTML(t,ctx){const [c,s]=tstat(t);const pc=pcount(t.id);return `<div class="card" id="b_${t.id}">
+${ctx?`<div class="mut" style="margin-bottom:4px">${esc(ctx)}</div>`:""}<div class="row" style="justify-content:space-between"><b>${esc(t.cat)}${t.title?` <span class="mut">· ${esc(t.title)}</span>`:""}</b><span class="row" style="gap:6px">${pc?`<span class="pill">📷 ${pc}</span>`:""}<span class="pill ${c}">${s}</span></span></div>
+<div class="lbl noprint">Kategori</div>
+<div class="seg noprint">${TAGCAT.map(k=>`<button class="${t.cat===k?"ok":""}" style="${t.cat===k?"background:var(--ink);border-color:var(--ink)":""}" onclick="tset('${t.id}','cat','${k}')">${k}</button>`).join("")}</div>
+<div class="lbl noprint">Titel / placering</div>
+<input class="noprint" value="${esc(t.title)}" placeholder="Fx røglem ved trappe, solcellefelt syd" oninput="tupd('${t.id}','title',this.value)">
+<div class="lbl">Status</div>
+<div class="seg"><button class="${t.status==="ok"?"ok":""}" onclick="tset('${t.id}','status','ok')">OK</button><button class="${t.status==="afvigelse"?"bad":""}" onclick="tset('${t.id}','status','afvigelse')">Afvigelse</button><button style="${t.status==="note"?"background:#fef3c7;border-color:#f59e0b":""}" onclick="tset('${t.id}','status','note')">Note</button></div>
+<div class="lbl">Note</div>
+<textarea placeholder="Fx gennemføring for solcellekabel mangler tætning…" oninput="tupd('${t.id}','kom',this.value)">${esc(t.kom)}</textarea>
+${photoBlock(t.id)}
+<div class="row noprint" style="justify-content:space-between;margin-top:10px">${addPhotoBtn(t.id)}<button class="btn d" onclick="tdel('${t.id}')">Slet punkt</button></div>
+<div class="mut" style="margin-top:6px">${t.tid?"Senest ændret "+esc(t.tid):""}</div></div>`}
+function unitHead(o,f,u,l){const c=counts(l);return `<div class="card" style="background:#eef2ff" id="u_${f}_${u}"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${flName(f)} · ${unName(o,f,u)}</h2><span class="mut">${c.ok}/${c.n} godkendt${c.bad?" · "+c.bad+" afv.":""}</span></div><div class="row noprint" style="margin-top:8px"><button class="btn p" onclick="add('${f}','${u}')">+ Tilføj dåse</button>${tgBtn(o,f,u)}</div></div>`}
+function floorHTML(o,f,uf,print){let h=print?"":tgFloorCard(o,f);const us=unitsOf(o,f);
+  if(!print&&us.length>1)h+=`<div class="chips noprint"><button class="${!uf?"on":""}" onclick="S.uf='';save();render()">Alle</button>${us.map(u=>`<button class="${uf===u?"on":""}" onclick="S.uf='${u}';save();render()">${unName(o,f,u)}</button>`).join("")}</div>`;
+  us.forEach(u=>{if(uf&&uf!==u)return;const l=S.boxes.filter(b=>b.og===o.id&&b.fl===f&&b.un===u);if(print&&!l.length)return;h+=unitHead(o,f,u,l);l.forEach(b=>h+=boxHTML(b))});return h}
+function tagView(o,print){const l=S.tag.filter(t=>t.og===o.id);let h="";
+  if(!print)h+=`<div class="card" style="background:#eef2ff"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Tag · ${esc(o.name)}</h2><span class="mut">${l.length} punkter</span></div><p class="mut" style="margin:6px 0">Noter og afvigelser der ikke hører til en dåse, fx solceller, røgopluk og gennemføringer.</p><button class="btn p" onclick="tadd()">+ Nyt punkt på taget</button></div>`;
+  l.forEach(t=>h+=tagHTML(t));return h}
+function overview(o){let h="";
+  if(S.ogs.length>1){h+=`<div class="card"><h2>Alle opgange</h2><div class="tblw"><table><tr><th>Opgang</th><th>Dåser</th><th>Godk.</th><th>Afv.</th><th>Tag afv.</th></tr>${S.ogs.map(x=>{const c=counts(S.boxes.filter(b=>b.og===x.id));const ta=S.tag.filter(t=>t.og===x.id&&t.status==="afvigelse").length;return `<tr><td><a href="#" onclick="pickOg('${x.id}');return false">${esc(x.name)}</a></td><td>${c.n}</td><td>${c.ok}</td><td>${c.bad?`<b style="color:var(--bad)">${c.bad}</b>`:0}</td><td>${ta?`<b style="color:var(--bad)">${ta}</b>`:0}</td></tr>`}).join("")}</table></div></div>`}
+  const mine=S.boxes.filter(b=>b.og===o.id);const all=counts(mine);const np=mine.reduce((a,b)=>a+pcount(b.id),0);
+  const cols=[];for(let i=1;i<=o.units;i++)cols.push(String(i));cols.push("OG");
+  const fl=floorsOf(o).slice().reverse();const tl=S.tag.filter(t=>t.og===o.id);const ta=tl.filter(t=>t.status==="afvigelse").length;
+  h+=`<div class="card"><h2>${esc(o.name)}</h2><p>${all.n} dåser · <span class="pill ok">${all.ok} godkendt</span> <span class="pill bad">${all.bad} afvigelser</span> <span class="pill">${all.open} åbne</span> <span class="pill">📷 ${np}</span></p>
+<div class="tblw"><table class="ov"><tr><th>Etage</th>${cols.map(u=>`<th>${colName(o,u)}</th>`).join("")}</tr>
+<tr><td><a href="#" onclick="go('tag');return false">Tag</a></td><td colspan="${cols.length}" class="c" style="text-align:left" onclick="go('tag')">${tl.length?`${tl.length} punkter${ta?` · <b>${ta} afv.</b>`:""}`:'<span class="mut">–</span>'}</td></tr>
+${fl.map(f=>`<tr><td><a href="#" onclick="go('f:${f}');return false">${flName(f)}</a></td>${cols.map(u=>{if(f==="K"&&u!=="OG")return `<td class="mut">·</td>`;const c=counts(mine.filter(b=>b.fl===f&&b.un===u));return `<td class="c" onclick="go('f:${f}','${u}')">${c.n?`${c.ok}/${c.n}${c.bad?` <b>${c.bad}!</b>`:""}`:'<span class="mut">–</span>'}</td>`}).join("")}</tr>`).join("")}</table></div>
+<p class="mut">Tal = godkendte/registrerede dåser, rød = afvigelser. Tryk på et felt for at åbne boligen.${o.units>3?` Boligerne hedder fx 1.1, 1.2 på 1. sal og ${STUE_PREFIX}.1 i stuen.`:""}</p></div>`;
+  const hid=mine.filter(b=>hidden(b,o));
+  if(hid.length){h+=`<div class="sec">Skjulte dåser (${hid.length}) – ligger uden for opgangens nuværende opsætning</div><p class="mut">De er ikke slettet. Ret opsætningen under ⚙︎ for at få dem tilbage på plads, eller slet dem her.</p>`;hid.forEach(b=>h+=boxHTML(b,flName(b.fl)+" · "+(b.un==="OG"?"Opgang":"bolig nr. "+b.un)))}
+  return h}
+let PRINTALL=false;
+function render(){ogSel();tabs();const o=og();let h="";$("ptitle").textContent="Dåsetjek"+(S.proj?" – "+S.proj:"")+" · udskrevet "+now();
+  if(PRINTALL){S.ogs.forEach(x=>{h+=`<h2 style="margin-top:18px">${esc(x.name)}</h2>`;floorsOf(x).forEach(f=>h+=floorHTML(x,f,"",true));const hid=S.boxes.filter(b=>b.og===x.id&&hidden(b,x));hid.forEach(b=>h+=boxHTML(b,"Skjult: "+flName(b.fl)+" · bolig "+b.un));const tl=S.tag.filter(t=>t.og===x.id);if(tl.length){h+=`<div class="sec">Tag</div>`;tl.forEach(t=>h+=tagHTML(t))}})}
+  else if(S.view==="oversigt")h+=noticeHTML()+overview(o);
+  else if(S.view==="tegn")h+=tegnView();
+  else if(S.view==="tag")h+=tagView(o);
+  else if(S.view==="afvig"){const bl=S.boxes.filter(b=>stat(b)[0]==="bad"),tl=S.tag.filter(t=>t.status==="afvigelse");h+=`<h2>Afvigelser – alle opgange (${bl.length+tl.length})</h2>`;
+    S.ogs.forEach(x=>{const b2=bl.filter(b=>b.og===x.id),t2=tl.filter(t=>t.og===x.id);if(!b2.length&&!t2.length)return;h+=`<div class="sec">${esc(x.name)}</div>`;
+      b2.forEach(b=>{const pc=pcount(b.id);h+=boxHTML(b,flName(b.fl)+" · "+unName(x,b.fl,b.un)+(b.rum?" · "+b.rum:"")+(pc?" · 📷 "+pc:" · ingen billeder"))});
+      t2.forEach(t=>{const pc=pcount(t.id);h+=tagHTML(t,"Tag · "+t.cat+(pc?" · 📷 "+pc:" · ingen billeder"))})});
+    if(!bl.length&&!tl.length)h+=`<p class="mut">Ingen afvigelser registreret.</p>`}
+  else if(S.view.startsWith("f:")){const f=S.view.slice(2);if(floorsOf(o).includes(f))h+=floorHTML(o,f,S.uf);else{S.view="oversigt";return render()}}
+  $("main").innerHTML=h}
+function add(f,u){const n=S.boxes.filter(b=>b.og===S.cur&&b.fl===f&&b.un===u).length+1;const b={id:uid(),og:S.cur,fl:f,un:u,nr:String(n),rum:"",plac:"",ror:"",kom:"",tid:now()};S.boxes.push(b);save();render();setTimeout(()=>{const e=$("b_"+b.id);e&&e.scrollIntoView({behavior:"smooth"})},50)}
+function upd(id,k,v){const b=item(id);if(!b)return;b[k]=v;b.tid=now();save()}
+function set(id,k,v){upd(id,k,v);render()}
+async function del(id){const pc=pcount(id);if(confirm("Slet denne dåse"+(pc?" og dens "+pc+(pc===1?" billede":" billeder"):"")+"?")){S.boxes=S.boxes.filter(b=>b.id!==id);save();try{await deletePhotosOf(id)}catch(e){}render();updStorage()}}
+function tadd(){const t={id:uid(),og:S.cur,cat:"Solceller",title:"",status:"",kom:"",tid:now()};S.tag.push(t);save();render();setTimeout(()=>{const e=$("b_"+t.id);e&&e.scrollIntoView({behavior:"smooth"})},50)}
+const tupd=upd,tset=set;
+async function tdel(id){const pc=pcount(id);if(confirm("Slet dette punkt"+(pc?" og "+pc+(pc===1?" billede":" billeder"):"")+"?")){S.tag=S.tag.filter(t=>t.id!==id);save();try{await deletePhotosOf(id)}catch(e){}render();updStorage()}}
+function printAll(){PRINTALL=true;render();setTimeout(()=>{window.print();PRINTALL=false;render()},300)}
+
+/* ===== Opgang: ny / redigér ===== */
+let D=null;
+function ogDialog(id){const o=id?ogById(id):null;D=o?{...o,isNew:false}:{...newOg("Opgang "+String.fromCharCode(64+Math.min(26,S.ogs.length+1))),isNew:true};drawDlg();$("dlg").classList.add("on")}
+function drawDlg(){const fl=[];for(let i=0;i<=5;i++)fl.push(i);
+  $("sheet").innerHTML=`<h2>${D.isNew?"Ny opgang":"Opsætning af opgang"}</h2>
+<div class="lbl">Navn (fx Opgang A eller adresse)</div><input id="dname" value="${esc(D.name)}" oninput="D.name=this.value">
+<div class="lbl">Boliger pr. etage</div><div class="seg">${[2,3,4,5,6].map(n=>`<button class="${D.units===n?"ok":""}" onclick="D.units=${n};drawDlg()">${n}</button>`).join("")}</div>
+<div class="mut" style="margin-top:4px">Navne: ${D.units<=3?UNITS_23[D.units].join(", "):`${STUE_PREFIX}.1–${STUE_PREFIX}.${D.units} i stuen, 1.1–1.${D.units} på 1. sal osv.`} + Opgang</div>
+<div class="lbl">Øverste etage</div><div class="seg">${fl.map(i=>`<button class="${D.top===i?"ok":""}" onclick="D.top=${i};drawDlg()">${i?i+".":"Stue"}</button>`).join("")}</div>
+<div class="lbl">Kælder i opgangen?</div><div class="seg"><button class="${D.kaelder?"ok":""}" onclick="D.kaelder=true;drawDlg()">Ja</button><button class="${!D.kaelder?"ok":""}" onclick="D.kaelder=false;drawDlg()">Nej</button></div>
+<div class="lbl">Tegninger til opgangen (valgfrit): bygning</div><div class="seg"><button class="${!D.tgB?"ok":""}" onclick="D.tgB='';D.tgO='';drawDlg()">Ingen</button>${Object.keys(TG).map(b=>`<button class="${D.tgB===b?"ok":""}" onclick="D.tgB='${b}';D.tgO=tgOgs('${b}')[0];drawDlg()">${b}</button>`).join("")}</div>
+${D.tgB?`<div class="lbl">Tegninger: opgang i ${D.tgB}</div><div class="seg">${tgOgs(D.tgB).map(x=>`<button class="${(D.tgO||"")===x?"ok":""}" onclick="D.tgO='${x}';drawDlg()">${ogLbl(x)}</button>`).join("")}</div><div class="mut" style="margin-top:4px">Tegninger findes for: ${tgFls(D.tgB,D.tgO||"").map(TGFL).join(", ")}. Boligerne kobles til tegningerne via navnet (tv., th., 1.2 …) – ret navnene under 📐 Tegninger.</div>`:""}
+<div class="row" style="margin-top:16px;justify-content:space-between"><button class="btn" onclick="closeDlg()">Annullér</button><button class="btn p" onclick="saveDlg()">Gem</button></div>
+${!D.isNew&&S.ogs.length>1?`<div style="margin-top:18px"><button class="btn d" onclick="delOg()">Slet opgang…</button></div>`:""}`}
+function closeDlg(){$("dlg").classList.remove("on");D=null}
+function saveDlg(){const name=(D.name||"").trim()||"Opgang";const cfg={id:D.id,name,units:D.units,top:D.top,kaelder:D.kaelder,tgB:D.tgB||"",tgO:D.tgB?(D.tgO||""):""};
+  if(D.isNew){S.ogs.push(cfg);S.cur=cfg.id;S.view="oversigt";save();closeDlg();render();toast("Opgang oprettet");return}
+  const o=ogById(D.id);const mine=S.boxes.filter(b=>b.og===o.id);
+  const newly=mine.filter(b=>!hidden(b,o)&&hidden(b,cfg)).length;
+  if(newly&&!confirm(newly+" dåse(r) ligger på boliger/etager, som ikke findes i den nye opsætning.\n\nDe bliver IKKE slettet, men vises under 'Skjulte dåser' i oversigten, indtil du ændrer opsætningen tilbage.\n\nFortsæt?"))return;
+  const dw=mine.filter(b=>b.un!=="OG"&&!hidden(b,cfg)).length;
+  if(o.units!==cfg.units&&dw&&!confirm("Antal boliger ændres fra "+o.units+" til "+cfg.units+". Dåserne bliver på bolig nr. 1, 2, 3 … og får de nye navne (fx bliver bolig 2 '"+unName(cfg,"1","2")+"'). Fortsæt?"))return;
+  Object.assign(o,cfg);save();closeDlg();render();toast("Opsætning gemt")}
+async function delOg(){const o=ogById(D.id);const b=S.boxes.filter(x=>x.og===o.id),t=S.tag.filter(x=>x.og===o.id);
+  if(!confirm("Slet '"+o.name+"' med "+b.length+" dåser og "+t.length+" tag-punkter, inkl. billeder? Det kan ikke fortrydes."))return;
+  for(const x of [...b,...t]){try{await deletePhotosOf(x.id)}catch(e){}}
+  S.boxes=S.boxes.filter(x=>x.og!==o.id);S.tag=S.tag.filter(x=>x.og!==o.id);S.ogs=S.ogs.filter(x=>x.id!==o.id);S.cur=S.ogs[0].id;S.view="oversigt";save();closeDlg();render();updStorage()}
+
+/* ===== Eksport / backup ===== */
+function dl(name,data,type){const a=document.createElement("a");a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
+function stamp(){const d=new Date(),z=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())}
+function exportCSV(){const q=s=>'"'+String(s==null?"":s).replace(/"/g,'""')+'"';let r=[["Projekt","Opgang","Etage","Lokation","Dåse/punkt","Rum/placering","Placering","Rør","Kommentar","Status","Antal billeder","Senest ændret"].join(";")];
+  S.ogs.forEach(o=>{S.boxes.filter(b=>b.og===o.id).forEach(b=>{r.push([S.proj,o.name,flName(b.fl),(hidden(b,o)?"(skjult) ":"")+unName(o,b.fl,b.un),b.nr,b.rum,b.plac==="ok"?"Korrekt":b.plac==="forkert"?"Forkert":"",b.ror==="ok"?"OK":b.ror==="afvigelse"?"Afvigelse":"",b.kom,stat(b)[1],pcount(b.id),b.tid].map(q).join(";"))});
+    S.tag.filter(t=>t.og===o.id).forEach(t=>r.push([S.proj,o.name,"Tag",t.cat,t.title,"","","",t.kom,tstat(t)[1],pcount(t.id),t.tid].map(q).join(";")))});
+  dl("daasetjek2-"+stamp()+".csv","\ufeff"+r.join("\r\n"),"text/csv")}
+function b64(blob){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>rej(fr.error);fr.readAsDataURL(blob)})}
+async function backup(){const list=Object.values(P).flat();const size=list.reduce((a,p)=>a+p.blob.size,0);
+  if(list.length&&!confirm("Backup med "+list.length+" billeder fylder ca. "+(size*1.37/1048576).toFixed(1)+" MB. Fortsæt?"))return;
+  toast("Laver backup…");const photos=[];for(const p of list)photos.push({id:p.id,boxId:p.boxId,t:p.t,data:await b64(p.blob)});
+  dl("daasetjek2-backup-"+stamp()+".json",JSON.stringify({app:"daasetjek",version:4,saved:new Date().toISOString(),...S,photos}),"application/json")}
+function fromDataURL(u){const [h,d]=u.split(",");const mime=(h.match(/data:([^;]+)/)||[])[1]||"image/jpeg";const bin=atob(d);const a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:mime})}
+function restore(e){const f=e.target.files[0];e.target.value="";if(!f)return;const fr=new FileReader();fr.onload=async()=>{let d;try{d=JSON.parse(fr.result)}catch(x){alert("Kunne ikke læse filen");return}
+  if(!d||!Array.isArray(d.boxes)){alert("Filen er ikke en Dåsetjek-backup");return}
+  const photos=d.photos||[];
+  if(!confirm("Indlæs backup med "+d.boxes.length+" dåser"+(d.tag?" og "+d.tag.length+" tag-punkter":"")+(photos.length?" og "+photos.length+" billeder":"")+"? Det erstatter alt på denne telefon."))return;
+  delete d.photos;delete d.app;delete d.version;delete d.saved;
+  const keepTg=S.tg;S=Array.isArray(d.ogs)?fix(d):migrate(d);if(!d.tg||!Object.keys(S.tg.names).length)S.tg=keepTg;S.notice="";save();
+  try{Object.values(URLS).forEach(u=>URL.revokeObjectURL(u));for(const k in URLS)delete URLS[k];await tx("readwrite",s=>s.clear());
+    for(const p of photos){await tx("readwrite",s=>s.put({id:p.id,boxId:p.boxId,t:p.t||Date.now(),blob:fromDataURL(p.data)}))}
+    await loadPhotos()}catch(x){alert("Billederne kunne ikke indlæses: "+x.message)}
+  $("proj").value=S.proj;render();updStorage();alert("Backup indlæst")};fr.readAsText(f)}
+async function updStorage(){try{if(navigator.storage&&navigator.storage.estimate){const e=await navigator.storage.estimate();const p=navigator.storage.persisted?await navigator.storage.persisted():false;$("stor").textContent="Brugt plads: "+(e.usage/1048576).toFixed(1)+" MB"+(p?" · lager beskyttet mod automatisk sletning":"")+" · Dåsetjek 2 (version 4)"}}catch(x){}}
+
+const TG={"I1":{"file":"tegninger/I1.pdf","mb":4.1,"idx":1,"ov":2,"d":[{"p":3,"s":"I1-3","o":"A","f":["st","1","2"],"t":"Rækkehuse, Byg A, st. til 2.sal, 5V","g":"Rækkehus","w":"Rækkehus – én tegning dækker st. til 2. sal"},{"p":4,"s":"I1-4","o":"B","f":["st","1","2"],"t":"Rækkehuse, Byg B, st. til 2.sal, 5V","g":"Rækkehus","w":"Rækkehus – én tegning dækker st. til 2. sal"},{"p":5,"s":"I1-5","o":"C","f":["st","1","2"],"t":"Rækkehuse, Byg C, st. til 2.sal, 5V","g":"Rækkehus","w":"Rækkehus – én tegning dækker st. til 2. sal"},{"p":6,"s":"I1-6","o":"D","f":["st"],"t":"Opgangsbolig, Byg D, st., 2V","g":"","w":"Eneste tegning for opgang/etage"},{"p":7,"s":"I1-7","o":"E","f":["st"],"t":"Opgangsbolig, Byg E, st., 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":8,"s":"I1-8","o":"E","f":["st"],"t":"Opgangsbolig, Byg E, st., 3V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":9,"s":"I1-9","o":"F","f":["st","1","2"],"t":"Rækkehuse, Byg F, st. til 2.sal, 5V","g":"Rækkehus","w":"Rækkehus – én tegning dækker st. til 2. sal"},{"p":10,"s":"I1-10","o":"G","f":["st","1","2"],"t":"Rækkehuse, Byg G, st. til 2.sal, 5V","g":"Rækkehus","w":"Rækkehus – én tegning dækker st. til 2. sal"},{"p":11,"s":"I1-11","o":"D","f":["1"],"t":"Opgangsbolig, Byg D, 1.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (3 tegninger på etagen)"},{"p":12,"s":"I1-12","o":"D","f":["1"],"t":"Opgangsbolig, Byg D, 1.sal, 2V","g":"mf.","w":"Rækkefølge venstre→højre i oversigtsplanen (3 tegninger på etagen)"},{"p":13,"s":"I1-13","o":"D","f":["1"],"t":"Opgangsbolig, Byg D 1.sal, 2V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (3 tegninger på etagen)"},{"p":14,"s":"I1-14","o":"E","f":["1"],"t":"Opgangsbolig, Byg E, 1.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":15,"s":"I1-15","o":"E","f":["1"],"t":"Opgangsbolig, Byg E, 1.sal, 3V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":16,"s":"I1-16","o":"D","f":["2"],"t":"Opgangsbolig, Byg D, 2.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (3 tegninger på etagen)"},{"p":17,"s":"I1-17","o":"D","f":["2"],"t":"Opgangsbolig, Byg D, 2.sal, 2V","g":"mf.","w":"Rækkefølge venstre→højre i oversigtsplanen (3 tegninger på etagen)"},{"p":18,"s":"I1-18","o":"D","f":["2"],"t":"Opgangsbolig, Byg D, 2.sal, 2V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (3 tegninger på etagen)"},{"p":19,"s":"I1-19","o":"E","f":["2"],"t":"Opgangsbolig, Byg E, 2.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":20,"s":"I1-20","o":"E","f":["2"],"t":"Opgangsbolig, Byg E, 2.sal, 3V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":21,"s":"I1-21","o":"D","f":["3"],"t":"Opgangsbolig, Byg D, 3.sal, 4V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":22,"s":"I1-22","o":"D","f":["3"],"t":"Opgangsbolig, Byg D, 3.sal, 2V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":23,"s":"I1-23","o":"E","f":["3"],"t":"Opgangsbolig, Byg E, 3.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":24,"s":"I1-24","o":"E","f":["3"],"t":"Opgangsbolig, Byg E, 3.sal, 3V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":25,"s":"I1-25","o":"E","f":["4"],"t":"Opgangsbolig, Byg E, 4.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":26,"s":"I1-26","o":"E","f":["4"],"t":"Opgangsbolig, Byg E, 4.sal, 3V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"}]},"J1":{"file":"tegninger/J1.pdf","mb":6.3,"idx":1,"ov":2,"d":[{"p":3,"s":"J1-3","o":"A","f":["st"],"t":"Opgangsbolig, Byg A, st., 3V","g":"","w":"Eneste tegning for opgang/etage"},{"p":4,"s":"J1-4","o":"B","f":["st"],"t":"Altangangsbolig, Byg B, st., 1V","g":"st.4","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":5,"s":"J1-5","o":"B","f":["st"],"t":"Altangangsbolig, Byg B, st., 1V","g":"st.3","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":6,"s":"J1-6","o":"B","f":["st"],"t":"Altangangsbolig, Byg B, st., 1V","g":"st.2","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":7,"s":"J1-7","o":"B","f":["st"],"t":"Opgangsbolig, Byg B, st., 2V","g":"st.1","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":8,"s":"J1-8","o":"C","f":["st"],"t":"Opgangsbolig, Byg C, st., 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":9,"s":"J1-9","o":"C","f":["st"],"t":"Opgangsbolig, Byg C, st., 3V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":10,"s":"J1-10","o":"D","f":["st"],"t":"Opgangsbolig, Byg D, st., 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":11,"s":"J1-11","o":"D","f":["st"],"t":"Opgangsbolig, Byg D, st., 3V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":12,"s":"J1-12","o":"A","f":["1"],"t":"Opgangsbolig, Byg A 1.sal, 3V","g":"th.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":13,"s":"J1-13","o":"A","f":["1"],"t":"Opgangsbolig, Byg A, 1.sal, 3V","g":"tv.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":14,"s":"J1-14","o":"B","f":["1"],"t":"Altangangsbolig, Byg B, 1.sal, 1V","g":"1.4","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":15,"s":"J1-15","o":"B","f":["1"],"t":"Altangangsbolig, Byg B, 1.sal, 1V","g":"1.3","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":16,"s":"J1-16","o":"B","f":["1"],"t":"Altangangsbolig, Byg B, 1.sal, 1V","g":"1.2","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":17,"s":"J1-17","o":"B","f":["1"],"t":"Opgangsbolig, Byg B, 1.sal, 4V","g":"1.1","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":18,"s":"J1-18","o":"C","f":["1"],"t":"Opgangsbolig, Byg C, 1.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":19,"s":"J1-19","o":"C","f":["1"],"t":"Opgangsbolig, Byg C, 1.sal, 4V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":20,"s":"J1-20","o":"D","f":["1"],"t":"Opgangsbolig, Byg D, 1.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":21,"s":"J1-21","o":"D","f":["1"],"t":"Opgangsbolig, Byg D, 1.sal, 4V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":22,"s":"J1-22","o":"A","f":["2"],"t":"Opgangsbolig, Byg A, 2.sal, 3V","g":"th.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":23,"s":"J1-23","o":"A","f":["2"],"t":"Opgangsbolig, Byg A, 2.sal, 3V","g":"tv.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":24,"s":"J1-24","o":"B","f":["2"],"t":"Altangangsbolig, Byg B, 2.sal, 1V","g":"2.4","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":25,"s":"J1-25","o":"B","f":["2"],"t":"Altangangsbolig, Byg B, 2.sal, 1V","g":"2.3","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":26,"s":"J1-26","o":"B","f":["2"],"t":"Altangangsbolig, Byg B, 2.sal, 1V","g":"2.2","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":27,"s":"J1-27","o":"B","f":["2"],"t":"Opgangsbolig, Byg B, 2.sal, 4V","g":"2.1","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":28,"s":"J1-28","o":"C","f":["2"],"t":"Opgangsbolig, Byg C, 2.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":29,"s":"J1-29","o":"C","f":["2"],"t":"Opgangsbolig, Byg C, 2.sal, 4V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":30,"s":"J1-30","o":"D","f":["2"],"t":"Opgangsbolig, Byg D, 2.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":31,"s":"J1-31","o":"D","f":["2"],"t":"Opgangsbolig, Byg D, 2.sal, 4V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":32,"s":"J1-32","o":"A","f":["3"],"t":"Opgangsbolig, Byg A, 3.sal, 3V","g":"th.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":33,"s":"J1-33","o":"A","f":["3"],"t":"Opgangsbolig, Byg A, 3.sal, 3V","g":"tv.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":34,"s":"J1-34","o":"B","f":["3"],"t":"Altangangsbolig, Byg B, 3.sal, 1V","g":"3.4","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":35,"s":"J1-35","o":"B","f":["3"],"t":"Altangangsbolig, Byg B, 3.sal, 1V","g":"3.3","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":36,"s":"J1-36","o":"B","f":["3"],"t":"Altangangsbolig, Byg B, 3.sal, 1V","g":"3.2","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":37,"s":"J1-37","o":"B","f":["3"],"t":"Opgangsbolig, Byg B, 3.sal, 4V","g":"3.1","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":38,"s":"J1-38","o":"C","f":["3"],"t":"Opgangsbolig, Byg C, 3.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":39,"s":"J1-39","o":"C","f":["3"],"t":"Opgangsbolig, Byg C, 3.sal, 4V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":40,"s":"J1-40","o":"D","f":["3"],"t":"Opgangsbolig, Byg D, 3.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":41,"s":"J1-41","o":"D","f":["3"],"t":"Opgangsbolig, Byg D, 3.sal, 4V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":42,"s":"J1-42","o":"A","f":["4"],"t":"Opgangsbolig, Byg A, 4.sal, 3V","g":"th.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":43,"s":"J1-43","o":"A","f":["4"],"t":"Opgangsbolig, Byg A, 4.sal, 3V","g":"tv.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":44,"s":"J1-44","o":"B","f":["4"],"t":"Altangangsbolig, Byg B, 4.sal, 1V","g":"4.4","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":45,"s":"J1-45","o":"B","f":["4"],"t":"Altangangsbolig, Byg B, 4.sal, 1V","g":"4.3","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":46,"s":"J1-46","o":"B","f":["4"],"t":"Altangangsbolig, Byg B, 4.sal, 1V","g":"4.2","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":47,"s":"J1-47","o":"B","f":["4"],"t":"Opgangsbolig, Byg B, 4.sal, 4V","g":"4.1","w":"Rækkefølge top→bund i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":48,"s":"J1-48","o":"C","f":["4"],"t":"Opgangsbolig, Byg C, 4.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":49,"s":"J1-49","o":"C","f":["4"],"t":"Opgangsbolig, Byg C, 4.sal, 4V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":50,"s":"J1-50","o":"D","f":["4"],"t":"Opgangsbolig, Byg D, 4.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":51,"s":"J1-51","o":"D","f":["4"],"t":"Opgangsbolig, Byg D, 4.sal, 4V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":52,"s":"J1-52","o":"A","f":["5"],"t":"Opgangsbolig, Byg A, 5.sal, 3V","g":"th.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":53,"s":"J1-53","o":"A","f":["5"],"t":"Opgangsbolig, Byg A, 5.sal, 3V","g":"tv.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":54,"s":"J1-54","o":"C","f":["5"],"t":"Opgangsbolig, Byg C, 5.sal, 3V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":55,"s":"J1-55","o":"C","f":["5"],"t":"Opgangsbolig, Byg C, 5.sal, 4V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"}]},"J2":{"file":"tegninger/J2.pdf","mb":3.9,"idx":1,"ov":2,"d":[{"p":3,"s":"J2-3","o":"B","f":["st"],"t":"Altangangsbolig, Byg B, st, 2V","g":"st.3","w":"Rækkefølge top→bund i oversigtsplanen (3 tegninger på etagen) – altangang, nummereret"},{"p":4,"s":"J2-4","o":"B","f":["st"],"t":"Altangangsbolig, Byg B, st, 2V","g":"st.2","w":"Rækkefølge top→bund i oversigtsplanen (3 tegninger på etagen) – altangang, nummereret"},{"p":5,"s":"J2-5","o":"B","f":["st"],"t":"Altangangsbolig, Byg B, st, 2V","g":"st.1","w":"Rækkefølge top→bund i oversigtsplanen (3 tegninger på etagen) – altangang, nummereret"},{"p":6,"s":"J2-6","o":"A","f":["1"],"t":"Opgangsbolig, Byg A, 1.sal, 4V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":7,"s":"J2-7","o":"A","f":["1"],"t":"Opgangsbolig, Byg A, 1.sal, 2V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":8,"s":"J2-8","o":"B","f":["1"],"t":"Altangangsbolig, Byg B, 1.sal, 3V","g":"1.4","w":"Rækkefølge top→bund i oversigtsplanen (6 tegninger på etagen) – altangang, nummereret"},{"p":9,"s":"J2-9","o":"B","f":["1"],"t":"Altangangsbolig, Byg B, 1.sal, 3V","g":"1.5","w":"Rækkefølge top→bund i oversigtsplanen (6 tegninger på etagen) – altangang, nummereret"},{"p":10,"s":"J2-10","o":"B","f":["1"],"t":"Bofælleskab, Byg B, 1.sal, 4V","g":"1.6","w":"Rækkefølge top→bund i oversigtsplanen (6 tegninger på etagen) – altangang, nummereret"},{"p":11,"s":"J2-11","o":"B","f":["1"],"t":"Altangangsbolig, Byg B, 1.sal, 2V","g":"1.3","w":"Rækkefølge top→bund i oversigtsplanen (6 tegninger på etagen) – altangang, nummereret"},{"p":12,"s":"J2-12","o":"B","f":["1"],"t":"Altangangsbolig, Byg B, 1 sal, 2V","g":"1.2","w":"Rækkefølge top→bund i oversigtsplanen (6 tegninger på etagen) – altangang, nummereret"},{"p":13,"s":"J2-13","o":"B","f":["1"],"t":"Altangangsbolig, Byg B, 1 sal, 2V","g":"1.1","w":"Rækkefølge top→bund i oversigtsplanen (6 tegninger på etagen) – altangang, nummereret"},{"p":14,"s":"J2-14","o":"A","f":["2"],"t":"Opgangsbolig, Byg A, 2.sal, 4V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":15,"s":"J2-15","o":"A","f":["2"],"t":"Opgangsbolig, Byg A, 2.sal, 2V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":16,"s":"J2-16","o":"B","f":["2"],"t":"Altangangsbolig, Byg B, 2.sal, 3V","g":"2.1","w":"Rækkefølge venstre→højre i oversigtsplanen (6 tegninger på etagen) – altangang, nummereret"},{"p":17,"s":"J2-17","o":"B","f":["2"],"t":"Altangangsbolig, Byg B, 2.sal, 3V","g":"2.2","w":"Rækkefølge venstre→højre i oversigtsplanen (6 tegninger på etagen) – altangang, nummereret"},{"p":18,"s":"J2-18","o":"B","f":["2"],"t":"Bofælleskab, Byg B, 2.sal, 4V","g":"2.3","w":"Rækkefølge venstre→højre i oversigtsplanen (6 tegninger på etagen) – altangang, nummereret"},{"p":19,"s":"J2-19","o":"B","f":["2"],"t":"Altangangsbolig, Byg B, 2 sal, 2V","g":"2.4","w":"Rækkefølge venstre→højre i oversigtsplanen (6 tegninger på etagen) – altangang, nummereret"},{"p":20,"s":"J2-20","o":"B","f":["2"],"t":"Altangangsbolig, Byg B, 2 sal, 2V","g":"2.5","w":"Rækkefølge venstre→højre i oversigtsplanen (6 tegninger på etagen) – altangang, nummereret"},{"p":21,"s":"J2-21","o":"B","f":["2"],"t":"Altangangsbolig, Byg B, 2 sal, 2V","g":"2.6","w":"Rækkefølge venstre→højre i oversigtsplanen (6 tegninger på etagen) – altangang, nummereret"},{"p":22,"s":"J2-22","o":"A","f":["3"],"t":"Opgangsbolig, Byg A, 3.sal, 4V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":23,"s":"J2-23","o":"A","f":["3"],"t":"Opgangsbolig, Byg A, 3.sal, 2V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":24,"s":"J2-24","o":"B","f":["3"],"t":"Altangangsbolig, Byg B, 3.sal, 3V","g":"3.1","w":"Rækkefølge venstre→højre i oversigtsplanen (3 tegninger på etagen) – altangang, nummereret"},{"p":25,"s":"J2-25","o":"B","f":["3"],"t":"Altangangsbolig, Byg B, 3 sal, 3V","g":"3.2","w":"Rækkefølge venstre→højre i oversigtsplanen (3 tegninger på etagen) – altangang, nummereret"},{"p":26,"s":"J2-26","o":"B","f":["3"],"t":"Bofælleskab, Byg B, 3 sal, 4V","g":"3.3","w":"Rækkefølge venstre→højre i oversigtsplanen (3 tegninger på etagen) – altangang, nummereret"},{"p":27,"s":"J2-27","o":"A","f":["4"],"t":"Opgangsbolig, Byg A, 4.sal, 4V","g":"tv.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":28,"s":"J2-28","o":"A","f":["4"],"t":"Opgangsbolig, Byg A, 4.sal, 2V","g":"th.","w":"Rækkefølge venstre→højre i oversigtsplanen (2 tegninger på etagen)"},{"p":29,"s":"J2-29","o":"B","f":["4"],"t":"Altangangsbolig, Byg B, 4.sal, 3V","g":"4.1","w":"Rækkefølge venstre→højre i oversigtsplanen (3 tegninger på etagen) – altangang, nummereret"},{"p":30,"s":"J2-30","o":"B","f":["4"],"t":"Altangangsbolig, Byg B, 4.sal, 3V","g":"4.2","w":"Rækkefølge venstre→højre i oversigtsplanen (3 tegninger på etagen) – altangang, nummereret"},{"p":31,"s":"J2-31","o":"B","f":["4"],"t":"Bofælleskab, Byg B, 4 sal, 4V","g":"4.3","w":"Rækkefølge venstre→højre i oversigtsplanen (3 tegninger på etagen) – altangang, nummereret"}]},"K1":{"file":"tegninger/K1.pdf","mb":2.0,"idx":1,"ov":2,"d":[{"p":3,"s":"K1-3","o":"A","f":["st"],"t":"Opgangsbolig, Byg A, st.,2V","g":"tv.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":4,"s":"K1-4","o":"A","f":["st"],"t":"Opgangsbolig, Byg A, st.,2V","g":"th.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":5,"s":"K1-5","o":"B","f":["st"],"t":"Opgangsbolig, Byg B, st.,2V","g":"tv.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":6,"s":"K1-6","o":"B","f":["st"],"t":"Opgangsbolig, Byg B, st.,2V","g":"th.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":7,"s":"K1-7","o":"A","f":["1"],"t":"Opgangsbolig, Byg A, 1. sal, 3V","g":"tv.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":8,"s":"K1-8","o":"A","f":["1"],"t":"Opgangsbolig, Byg A, 1.sal, 2V","g":"th.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":9,"s":"K1-9","o":"B","f":["1"],"t":"Opgangsbolig, Byg B, 1. sal, 3V","g":"tv.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":10,"s":"K1-10","o":"B","f":["1"],"t":"Opgangsbolig, Byg B, 1. sal, 3V","g":"th.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":11,"s":"K1-11","o":"A","f":["2"],"t":"Opgangsbolig, Byg A, 2. sal, 3V","g":"tv.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":12,"s":"K1-12","o":"A","f":["2"],"t":"Opgangsbolig, Byg A, 2.sal, 2V","g":"th.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":13,"s":"K1-13","o":"B","f":["2"],"t":"Opgangsbolig, Byg B, 2. sal, 3V","g":"tv.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":14,"s":"K1-14","o":"B","f":["2"],"t":"Opgangsbolig, Byg B, 2. sal, 3V","g":"th.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":15,"s":"K1-15","o":"A","f":["3"],"t":"Opgangsbolig, Byg A, 3. sal, 4V","g":"","w":"Eneste tegning for opgang/etage"},{"p":16,"s":"K1-16","o":"B","f":["3"],"t":"Opgangsbolig, Byg B, 3. sal, 3V","g":"tv.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"},{"p":17,"s":"K1-17","o":"B","f":["3"],"t":"Opgangsbolig, Byg B, 3. sal, 3V","g":"th.","w":"Rækkefølge top→bund i oversigtsplanen (2 tegninger på etagen)"}]},"K3":{"file":"tegninger/K3.pdf","mb":3.0,"idx":1,"ov":2,"d":[{"p":3,"s":"K3-3","o":"","f":["st"],"t":"Altangangsbolig, st., 2V","g":"st.1","w":"Rækkefølge venstre→højre i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":4,"s":"K3-4","o":"","f":["st"],"t":"Altangangsbolig, st., 2V","g":"st.2","w":"Rækkefølge venstre→højre i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":5,"s":"K3-5","o":"","f":["st"],"t":"Altangangsbolig, st., 2V","g":"st.3","w":"Rækkefølge venstre→højre i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":6,"s":"K3-6","o":"","f":["st"],"t":"Altangangsbolig, st., 2V","g":"st.4","w":"Rækkefølge venstre→højre i oversigtsplanen (4 tegninger på etagen) – altangang, nummereret"},{"p":7,"s":"K3-7","o":"","f":["1"],"t":"Altangangsbolig, 1.sal, 2V","g":"1.1","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":8,"s":"K3-8","o":"","f":["1"],"t":"Altangangsbolig, 1.sal, 2V","g":"1.2","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":9,"s":"K3-9","o":"","f":["1"],"t":"Altangangsbolig, 1.sal, 2V","g":"1.3","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":10,"s":"K3-10","o":"","f":["1"],"t":"Altangangsbolig, 1.sal, 2V","g":"1.4","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":11,"s":"K3-11","o":"","f":["1"],"t":"Altangangsbolig, 1.sal, 2V","g":"1.5","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":12,"s":"K3-12","o":"","f":["2"],"t":"Altangangsbolig, 2.sal, 2V","g":"2.1","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":13,"s":"K3-13","o":"","f":["2"],"t":"Altangangsbolig, 2.sal, 2V","g":"2.2","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":14,"s":"K3-14","o":"","f":["2"],"t":"Altangangsbolig, 2.sal, 2V","g":"2.3","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":15,"s":"K3-15","o":"","f":["2"],"t":"Altangangsbolig, 2.sal, 2V","g":"2.4","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":16,"s":"K3-16","o":"","f":["2"],"t":"Altangangsbolig, 2.sal, 2V","g":"2.5","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":17,"s":"K3-17","o":"","f":["3"],"t":"Altangangsbolig, 3.sal, 2V","g":"3.1","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":18,"s":"K3-18","o":"","f":["3"],"t":"Altangangsbolig, 3.sal, 2V","g":"3.2","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":19,"s":"K3-19","o":"","f":["3"],"t":"Altangangsbolig, 3.sal, 2V","g":"3.3","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":20,"s":"K3-20","o":"","f":["3"],"t":"Altangangsbolig, 3.sal, 2V","g":"3.4","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":21,"s":"K3-21","o":"","f":["3"],"t":"Altangangsbolig, 3.sal, 2V","g":"3.5","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":22,"s":"K3-22","o":"","f":["4"],"t":"Altangangsbolig, 4.sal, 2V","g":"4.1","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":23,"s":"K3-23","o":"","f":["4"],"t":"Altangangsbolig, 4.sal, 2V","g":"4.2","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":24,"s":"K3-24","o":"","f":["4"],"t":"Altangangsbolig, 4.sal, 2V","g":"4.3","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":25,"s":"K3-25","o":"","f":["4"],"t":"Altangangsbolig, 4.sal, 2V","g":"4.4","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"},{"p":26,"s":"K3-26","o":"","f":["4"],"t":"Altangangsbolig, 4.sal, 2V","g":"4.5","w":"Rækkefølge venstre→højre i oversigtsplanen (5 tegninger på etagen) – altangang, nummereret"}]}};
+
+/* ===== Tegninger (Artelia: Elinstallationer – Lejlighedsplaner) ===== */
+const TGF={file:"tegninger/faelles.pdf",mb:0.3};
+const TGC="daasetjek2-tegninger-v1";               // samme navn som i sw.js
+const TGFLS=["st","1","2","3","4","5"];
+const TGFL=f=>f==="st"?"Stue":f+". sal";
+const dfl2tg=f=>f==="0"?"st":f;
+const ogLbl=o=>o?"Byg "+o:"Hele bygningen";
+function tgOgs(b){return TG[b]?[...new Set(TG[b].d.map(d=>d.o))].sort():[]}
+function tgFls(b,o){const s=new Set();(TG[b]?TG[b].d:[]).filter(d=>d.o===o).forEach(d=>d.f.forEach(x=>s.add(x)));return TGFLS.filter(x=>s.has(x))}
+function tgList(b,o,f){return (TG[b]?TG[b].d:[]).filter(d=>d.o===o&&(!f||d.f.includes(f)))}
+function tgBySide(s){const b=s.split("-")[0];const d=TG[b]&&TG[b].d.find(x=>x.s===s);return d?{b,d}:null}
+function tgName(d){const n=S.tg.names[d.s];return n!=null?n:d.g}
+function tgOk(d){return S.tg.names[d.s]!=null}
+function tgSel(){let t=S.tg.sel||{};if(!TG[t.b])t={b:"K1"};const os=tgOgs(t.b);if(!os.includes(t.o))t.o=os[0];const fs=tgFls(t.b,t.o);if(!fs.includes(t.f))t.f=fs[0];S.tg.sel=t;return t}
+function goTegn(){const o=og();if(o&&o.tgB&&TG[o.tgB]){S.tg.sel={b:o.tgB,o:o.tgO||"",f:(S.view.startsWith("f:")?dfl2tg(S.view.slice(2)):(S.tg.sel||{}).f)}}go("tegn")}
+function tgPick(k,v){const t=tgSel();t[k]=v;save();render()}
+function tgSetName(s,v){v=String(v||"").trim();S.tg.names[s]=v;save();render();toast("Navn gemt: "+(v||"(tomt)"))}
+function tgUnset(s){delete S.tg.names[s];save();render()}
+function tgCap(b,d){const n=tgName(d);return `${b} · ${ogLbl(d.o)} · ${n?n+" · ":""}Side ${d.s} – ${d.t}`}
+function tgLinked(b,o){return S.ogs.filter(x=>x.tgB===b&&(x.tgO||"")===o)}
+function tgUnitFor(x,f,name){if(!name)return null;const fl=f==="st"?"0":f;if(!floorsOf(x).includes(fl))return null;return unitsOf(x,fl).find(u=>u!=="OG"&&unName(x,fl,u)===name)||null}
+function tgQuick(d,k,f){const l=["tv.","mf.","th."];const p=f==="st"?STUE_PREFIX:f;for(let i=1;i<=Math.max(k,2);i++)l.push(p+"."+i);if(d.f.length>1)l.push("Rækkehus");return l}
+function tgCard(d,b,f,k){const n=tgName(d),c=tgOk(d);
+  const links=tgLinked(b,d.o).map(x=>{const u=tgUnitFor(x,f,n);return u?`<button class="btn" onclick="pickOg('${x.id}');go('f:${f==="st"?"0":f}','${u}')">☑︎ Dåser i ${esc(x.name)} · ${esc(n)}</button>`:""}).join("");
+  return `<div class="card tgc"><div class="row" style="justify-content:space-between"><b>Side ${esc(d.s)}${n?` · ${esc(n)}`:""}</b><span class="pill ${c?"ok":"w"}">${c?"Navn bekræftet":"Navn foreslået"}</span></div>
+<div class="mut" style="margin:4px 0 8px">${esc(d.t)}${d.f.length>1?" · én tegning for alle etager i rækkehuset":""}</div>
+<div class="row"><button class="btn p" onclick="tgOpenD('${d.s}','${f}')">📐 Åbn tegning</button>${links}</div>
+<div class="lbl">Navn på boligen${c?"":` – <i>foreslået${d.g?"":" (intet forslag)"}</i>, ret hvis det ikke passer`}</div>
+<div class="row"><input value="${esc(n)}" style="flex:1;min-width:110px" placeholder="fx tv., th., 1.2" aria-label="Navn på bolig ${esc(d.s)}" onchange="tgSetName('${d.s}',this.value)">${c?`<button class="btn" onclick="tgUnset('${d.s}')">Brug forslag${d.g?" ("+esc(d.g)+")":""}</button>`:`<button class="btn" onclick="tgSetName('${d.s}','${esc(d.g)}')">✓ Bekræft</button>`}</div>
+<div class="qn">${tgQuick(d,k,f).map(q=>`<button class="${n===q?"on":""}" onclick="tgSetName('${d.s}','${q}')">${q}</button>`).join("")}</div>
+<div class="mut" style="margin-top:6px;font-size:12px">${esc(d.w)}</div></div>`}
+function tegnView(){const t=tgSel();let h=`<div class="card"><h2>Tegninger</h2><p class="mut" style="margin:0 0 6px">Elinstallationer – princip og bestykning, lejlighedsplaner (Artelia, 27.02.2026).</p>
+<div class="lbl">Bygning</div><div class="chips">${Object.keys(TG).map(x=>`<button class="${x===t.b?"on":""}" onclick="tgPick('b','${x}')">${x}</button>`).join("")}</div>
+<div class="lbl">Opgang</div><div class="chips">${tgOgs(t.b).map(o=>`<button class="${o===t.o?"on":""}" onclick="tgPick('o','${o}')">${ogLbl(o)}</button>`).join("")}</div>
+<div class="lbl">Etage</div><div class="chips">${tgFls(t.b,t.o).map(f=>`<button class="${f===t.f?"on":""}" onclick="tgPick('f','${f}')">${TGFL(f)}</button>`).join("")}</div>
+<div class="row" style="margin-top:6px"><button class="btn" onclick="tgOpenOv('${t.b}')">🗺 Oversigtsplan ${t.b}</button><button class="btn" onclick="tgOpenF(2)">Signaturforklaring</button><button class="btn" onclick="tgOpenF(1)">Situationsplan</button></div></div>`;
+  const l=tgList(t.b,t.o,t.f);const lk=tgLinked(t.b,t.o);
+  h+=`<div class="sec">${t.b} · ${ogLbl(t.o)} · ${TGFL(t.f)} – ${l.length} ${l.length===1?"tegning":"tegninger"}</div>`;
+  if(!lk.length)h+=`<p class="mut">Tip: Tilknyt en opgang i Dåsetjek til ${t.b} · ${ogLbl(t.o)} under ⚙︎ Opsætning, så får du en "Tegning"-knap ved hver bolig.</p>`;
+  l.forEach(d=>h+=tgCard(d,t.b,t.f,l.length));
+  h+=`<div class="card"><h2>Offline</h2><p class="mut" style="margin:0 0 8px">En tegning gemmes på telefonen, første gang du åbner den. Vil du have alle tegninger med ud på pladsen, så hent dem på forhånd over wifi (ca. 20 MB).</p><div class="row"><button class="btn" onclick="tgPrefetch()">⬇︎ Hent alle tegninger til offline brug</button></div><p class="mut" id="tgpf"></p></div>`;
+  setTimeout(tgOfflineStatus,0);return h}
+async function tgOfflineStatus(){const e=$("tgpf");if(!e||!("caches" in window))return;try{const c=await caches.open(TGC);let n=0;const k=Object.keys(TG);for(const b of k)if(await c.match(TG[b].file))n++;e.textContent=n===k.length?"Alle tegninger er gemt på telefonen.":n+" af "+k.length+" bygninger er gemt på telefonen."}catch(x){}}
+async function tgPrefetch(){const e=$("tgpf");const files=["pdfjs/pdf.min.mjs","pdfjs/pdf.worker.min.mjs",TGF.file,...Object.values(TG).map(x=>x.file)];let i=0;
+  try{const c=await caches.open(TGC);for(const f of files){e.textContent="Henter "+(++i)+" af "+files.length+"…";if(!(await c.match(f)))await c.add(f)}e.textContent="Færdig – alle tegninger er gemt på telefonen.";toast("Tegninger gemt til offline brug")}catch(x){e.textContent="Kunne ikke hente alt ("+(x.message||x)+"). Tjek forbindelsen og prøv igen."}}
+/* Knapper i dåse-visningen */
+function tgFloorCard(o,f){if(!o.tgB||!TG[o.tgB]||f==="K")return "";const tf=dfl2tg(f);const l=tgList(o.tgB,o.tgO||"",tf);
+  return `<div class="card noprint" style="padding:10px"><div class="row" style="justify-content:space-between"><b>📐 Tegninger · ${o.tgB} · ${ogLbl(o.tgO||"")} · ${flName(f)}</b></div><div class="chips" style="margin:8px 0 0">${l.map(d=>`<button onclick="tgOpenD('${d.s}','${tf}')">${esc(tgName(d)||"?")} <span class="mut">(${d.s})</span></button>`).join("")}<button onclick="tgOpenOv('${o.tgB}')">🗺 Oversigtsplan</button></div>${l.length?"":`<p class="mut">Ingen tegninger for denne etage.</p>`}</div>`}
+function tgBtn(o,f,u){if(!o.tgB||!TG[o.tgB])return "";if(u==="OG")return `<button class="btn" onclick="tgOpenOv('${o.tgB}')">🗺 Oversigtsplan</button>`;
+  const tf=dfl2tg(f);const l=tgList(o.tgB,o.tgO||"",tf);const m=l.filter(d=>tgName(d)===unName(o,f,u));
+  if(m.length===1)return `<button class="btn" onclick="tgOpenD('${m[0].s}','${tf}')">📐 Tegning${tgOk(m[0])?"":" (foreslået)"}</button>`;
+  return l.length?`<button class="btn" onclick="tgChoose('${o.id}','${f}','${u}')">📐 Vælg tegning</button>`:""}
+function tgChoose(oid,f,u){const o=ogById(oid);const tf=dfl2tg(f);const l=tgList(o.tgB,o.tgO||"",tf);const nm=unName(o,f,u);
+  $("sheet").innerHTML=`<h2>Tegning til ${esc(o.name)} · ${flName(f)} · ${esc(nm)}</h2><p class="mut">Ingen tegning hedder "${esc(nm)}" endnu. Åbn tegningerne og vælg den, der passer – så husker appen det.</p>`+
+   l.map(d=>`<div class="card"><b>Side ${d.s}</b> <span class="mut">· ${esc(tgName(d)||"uden navn")}${tgOk(d)?"":" (foreslået)"}</span><div class="mut">${esc(d.t)}</div><div class="row" style="margin-top:8px"><button class="btn" onclick="tgOpenD('${d.s}','${tf}')">📐 Åbn</button><button class="btn p" onclick="S.tg.names['${d.s}']='${esc(nm)}';save();closeDlg();render();toast('Side ${d.s} er nu ${esc(nm)}')">Det er ${esc(nm)}</button></div></div>`).join("")+
+   `<div class="row" style="margin-top:12px"><button class="btn" onclick="closeDlg()">Luk</button></div>`;$("dlg").classList.add("on")}
+/* ===== Tegningsviser: PDF.js, knib-zoom og skarp gen-rendering ===== */
+let PDFJS=null;const DOCS={};
+async function pdfjs(){if(!PDFJS){const m=await import("./pdfjs/pdf.min.mjs");m.GlobalWorkerOptions.workerSrc=new URL("pdfjs/pdf.worker.min.mjs",location.href).href;PDFJS=m}return PDFJS}
+async function getBuf(url){let c=null;try{c=await caches.open(TGC)}catch(e){}let r=c?await c.match(url):null;
+  if(!r){r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status);if(c){try{await c.put(url,r.clone())}catch(e){}}}return await r.arrayBuffer()}
+function tgDocFor(b){if(DOCS[b])return DOCS[b];const f=b==="F"?TGF:TG[b];
+  for(const k in DOCS)if(k!=="F"){const p=DOCS[k];delete DOCS[k];p.then(d=>d.destroy()).catch(()=>{})}
+  tgMsg(`Henter tegninger for ${b==="F"?"signaturer/situationsplan":"bygning "+b} (${String(f.mb).replace(".",",")} MB)…`);
+  const p=(async()=>{const lib=await pdfjs();const buf=await getBuf(f.file);return await lib.getDocument({data:new Uint8Array(buf),isEvalSupported:false}).promise})();
+  DOCS[b]=p;p.catch(()=>{if(DOCS[b]===p)delete DOCS[b]});return p}
+const TV={list:[],i:0,page:null,z:1,tx:0,ty:0,fit:1,pw:0,ph:0,W:0,H:0,bk:1,tok:0,rt:null,dt:null,det:null,timer:0};
+function tgMsg(t){const e=$("tgmsg");e.textContent=t||"";e.style.display=t?"block":"none"}
+function tgShow(list,i){closeDlg();TV.list=list;TV.i=Math.max(0,i||0);$("tgv").classList.add("on");document.body.style.overflow="hidden";tgLoad()}
+function tgOpenD(s,f){const r=tgBySide(s);if(!r)return;const{b,d}=r;const fl=f&&d.f.includes(f)?f:d.f[0];const l=tgList(b,d.o,fl);tgShow(l.map(x=>({b,p:x.p,cap:tgCap(b,x)})),l.indexOf(d))}
+function tgOpenOv(b){tgShow([{b,p:TG[b].ov,cap:"Oversigtsplan · bygning "+b},{b,p:TG[b].idx,cap:"Index · bygning "+b}],0)}
+function tgOpenF(p){tgShow([{b:"F",p:2,cap:"Signaturforklaring og noter"},{b:"F",p:1,cap:"Situationsplan / nøgleplan"}],p===2?0:1)}
+function tgStep(k){if(TV.list.length<2)return;TV.i=(TV.i+k+TV.list.length)%TV.list.length;tgLoad()}
+function tgClear(){if(TV.rt){try{TV.rt.cancel()}catch(e){}TV.rt=null}if(TV.dt){try{TV.dt.cancel()}catch(e){}TV.dt=null}clearTimeout(TV.timer);if(TV.det){TV.det.width=0;TV.det.remove();TV.det=null}const c=$("tgbase");c.width=0;c.height=0;c.style.width=c.style.height="0px"}
+function tgClose(){TV.tok++;tgClear();TV.page=null;$("tgv").classList.remove("on");document.body.style.overflow="";tgMsg("")}
+async function tgLoad(){const it=TV.list[TV.i];const tok=++TV.tok;tgClear();TV.page=null;
+  $("tgcap").textContent=it.cap+(TV.list.length>1?` (${TV.i+1}/${TV.list.length})`:"");$("tgprev").disabled=$("tgnext").disabled=TV.list.length<2;tgMsg("Indlæser tegning…");
+  try{const doc=await tgDocFor(it.b);if(tok!==TV.tok)return;tgMsg("Tegner…");const page=await doc.getPage(it.p);if(tok!==TV.tok)return;TV.page=page;tgFit();await tgBase(tok);if(tok===TV.tok)tgMsg("")}
+  catch(e){if(tok!==TV.tok||(e&&e.name==="RenderingCancelledException"))return;const m=String(e&&e.message||e);const net=!navigator.onLine||e instanceof TypeError||/fetch|network|load failed|HTTP 5/i.test(m);
+    tgMsg(net?"Tegningen er ikke gemt på telefonen endnu, og der er ingen forbindelse. Åbn den igen, når du har net – så gemmes den til offline brug.":"Tegningen kunne ikke åbnes: "+m)}}
+function tgDims(){const st=$("tgstage");TV.W=st.clientWidth;TV.H=st.clientHeight}
+function tgFit(){tgDims();const v=TV.page.getViewport({scale:1});TV.fit=Math.min(TV.W/v.width,TV.H/v.height);TV.pw=v.width*TV.fit;TV.ph=v.height*TV.fit;TV.z=1;TV.tx=(TV.W-TV.pw)/2;TV.ty=(TV.H-TV.ph)/2;tgApply()}
+async function tgBase(tok){const dpr=window.devicePixelRatio||1;TV.bk=Math.max(1,Math.min(2*dpr,Math.sqrt(6e6/(TV.pw*TV.ph))));
+  const c=$("tgbase");const vp=TV.page.getViewport({scale:TV.fit*TV.bk});c.width=Math.floor(vp.width);c.height=Math.floor(vp.height);c.style.width=TV.pw+"px";c.style.height=TV.ph+"px";tgApply();
+  const ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);const t=TV.page.render({canvasContext:ctx,viewport:vp});TV.rt=t;await t.promise;if(TV.rt===t)TV.rt=null;if(tok===TV.tok)tgSched()}
+function tgApply(){const b=$("tgbase");b.style.transform=`translate(${TV.tx}px,${TV.ty}px) scale(${TV.z})`;const d=TV.det;if(d&&d.st){const r=TV.z/d.st.z;d.style.transform=`translate(${TV.tx-d.st.tx*r}px,${TV.ty-d.st.ty*r}px) scale(${r})`}$("tgzl").textContent=TV.z<1.01?"Knib eller dobbelttryk for at zoome":Math.round(TV.z*100)+" %"}
+function tgSched(){clearTimeout(TV.timer);TV.timer=setTimeout(tgDetail,160)}
+async function tgDetail(){if(!TV.page||TV.rt)return;const tok=TV.tok;if(TV.dt){try{TV.dt.cancel()}catch(e){}TV.dt=null}const dpr=window.devicePixelRatio||1;
+  if(TV.z*dpr<=TV.bk*1.02){if(TV.det){TV.det.width=0;TV.det.remove();TV.det=null}return}   // grundbilledet er skarpt nok
+  const c=document.createElement("canvas");c.className="tgdet";c.width=Math.ceil(TV.W*dpr);c.height=Math.ceil(TV.H*dpr);c.style.width=TV.W+"px";c.style.height=TV.H+"px";
+  const st={z:TV.z,tx:TV.tx,ty:TV.ty};const vp=TV.page.getViewport({scale:TV.fit*TV.z*dpr,offsetX:TV.tx*dpr,offsetY:TV.ty*dpr});
+  const ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(Math.max(0,TV.tx*dpr),Math.max(0,TV.ty*dpr),TV.pw*TV.z*dpr,TV.ph*TV.z*dpr);
+  const t=TV.page.render({canvasContext:ctx,viewport:vp,background:"rgba(0,0,0,0)"});TV.dt=t;
+  try{await t.promise}catch(e){c.width=0;return}if(tok!==TV.tok||TV.dt!==t){c.width=0;return}TV.dt=null;
+  c.st=st;if(TV.det){TV.det.width=0;TV.det.remove()}$("tgstage").insertBefore(c,$("tgmsg"));TV.det=c;tgApply()}
+function tgClamp(){const w=TV.pw*TV.z,h=TV.ph*TV.z,W=TV.W,H=TV.H;
+  TV.tx=w<=W?(W-w)/2:Math.min(W*0.25,Math.max(W*0.75-w,TV.tx));TV.ty=h<=H?(H-h)/2:Math.min(H*0.25,Math.max(H*0.75-h,TV.ty))}
+const ZMIN=1,ZMAX=24;
+function tgZoomAt(z,x,y){if(!TV.page)return;z=Math.min(ZMAX,Math.max(ZMIN,z));const r=z/TV.z;TV.tx=x-(x-TV.tx)*r;TV.ty=y-(y-TV.ty)*r;TV.z=z;tgClamp();tgApply();tgSched()}
+function tgZoomBy(k){tgZoomAt(TV.z*k,TV.W/2,TV.H/2)}
+function tgReset(){if(!TV.page)return;TV.z=1;tgClamp();tgApply();tgSched()}
+(function(){const st=$("tgstage");const PT=new Map();let GL=null,TAP=null,LAST=null;
+  const rel=e=>{const r=st.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+  const gest=()=>{const a=[...PT.values()];const c={x:a.reduce((s,p)=>s+p.x,0)/a.length,y:a.reduce((s,p)=>s+p.y,0)/a.length};return{c,d:a.length>1?Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y):0,n:a.length}};
+  st.addEventListener("pointerdown",e=>{e.preventDefault();try{st.setPointerCapture(e.pointerId)}catch(x){}PT.set(e.pointerId,rel(e));GL=gest();TAP=PT.size===1?{...GL.c,moved:false}:null});
+  st.addEventListener("pointermove",e=>{if(!PT.has(e.pointerId)||!TV.page)return;e.preventDefault();PT.set(e.pointerId,rel(e));const g=gest();
+    if(GL&&g.n===GL.n){let z=TV.z;if(g.n>1&&GL.d>10)z=Math.min(ZMAX,Math.max(ZMIN*0.9,TV.z*g.d/GL.d));const r=z/TV.z;TV.tx=g.c.x-(GL.c.x-TV.tx)*r;TV.ty=g.c.y-(GL.c.y-TV.ty)*r;TV.z=z;tgClamp();tgApply();tgSched()}
+    if(TAP&&Math.hypot(g.c.x-TAP.x,g.c.y-TAP.y)>8)TAP.moved=true;GL=g});
+  const up=e=>{if(!PT.has(e.pointerId))return;PT.delete(e.pointerId);GL=PT.size?gest():null;if(TV.z<ZMIN){tgReset()}
+    if(e.type==="pointerup"&&TAP&&!TAP.moved&&!PT.size){const t=Date.now();if(LAST&&t-LAST.t<350&&Math.hypot(TAP.x-LAST.x,TAP.y-LAST.y)<40){if(TV.z>1.5)tgReset();else tgZoomAt(3.5,TAP.x,TAP.y);LAST=null}else LAST={x:TAP.x,y:TAP.y,t}}if(!PT.size)TAP=null};
+  st.addEventListener("pointerup",up);st.addEventListener("pointercancel",up);
+  st.addEventListener("wheel",e=>{e.preventDefault();const p=rel(e);tgZoomAt(TV.z*Math.exp(-e.deltaY/300),p.x,p.y)},{passive:false});
+  ["gesturestart","gesturechange"].forEach(n=>document.addEventListener(n,e=>{if($("tgv").classList.contains("on"))e.preventDefault()}));
+  let rz=0;window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{if(!$("tgv").classList.contains("on")||!TV.page)return;const tok=TV.tok;if(TV.det){TV.det.width=0;TV.det.remove();TV.det=null}tgFit();tgBase(tok).catch(()=>{})},200)});
+  document.addEventListener("keydown",e=>{if(!$("tgv").classList.contains("on"))return;if(e.key==="Escape")tgClose();else if(e.key==="ArrowRight")tgStep(1);else if(e.key==="ArrowLeft")tgStep(-1);else if(e.key==="+")tgZoomBy(1.5);else if(e.key==="-")tgZoomBy(1/1.5)});
+})();
+
+/* ===== Start + opdatering ===== */
+(async()=>{render();
+  try{DB=await openDB();
+    if(S.photoCopy==="pending"){try{S.copiedPhotos=await copyOldPhotos()}catch(e){S.copiedPhotos=0}S.photoCopy="done";save()}
+    await loadPhotos()}catch(e){toast("Billeder er ikke tilgængelige i denne browser")}
+  render();
+  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
+  updStorage();
+  if("serviceWorker" in navigator&&(location.protocol==="https:"||/^(localhost|127\.0\.0\.1)$/.test(location.hostname))){
+    const had=!!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had)$("upd").classList.add("on")});
+    navigator.serviceWorker.register("sw.js").then(r=>{r.update().catch(()=>{});document.addEventListener("visibilitychange",()=>{if(!document.hidden)r.update().catch(()=>{})})}).catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
