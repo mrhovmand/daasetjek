@@ -1,7 +1,7 @@
 // Pladsen service worker (scope /daasetjek/plads/). Rører ikke Dåsetjek 1/2's caches.
 // App-filer: netværk først, cache som reserve. Tegninger + PDF.js (fra ../v2/): cache først.
 // Supabase og ntfy (andre domæner) går altid direkte på nettet.
-const APP = "pladsen-app-v2";
+const APP = "pladsen-app-v3";
 const TG = "pladsen-tegninger-v1";          // samme navn som TGC i index.html
 const OWN = [APP, TG];
 const CORE = ["./", "./index.html", "./manifest.json", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png"];
