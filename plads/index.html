@@ -139,6 +139,15 @@ const TGF={file:"../v2/tegninger/faelles.pdf",mb:0.3};
 const TGFF={file:"../v2/tegninger/faelles-F.pdf",mb:0.3};   // signaturer/situationsplan for F-sættet
 const TGC="pladsen-tegninger-v1";            // samme navn som i sw.js
 const TGFLS=["st","1","2","3","4","5"];
+
+/* ===== Bygningsplaner (hele etager, kælder, tag). Datadrevet: tilføj en gruppe/linje her for flere bygninger ===== */
+const PLANS=[{"g":"F1","name":"F1","for":["F1"],"items":[{"k":"Stue","file":"../v2/tegninger/plan-F1-stue.pdf","t":"L2F1 – Stue (inkl. erhverv/butik)","nr":"ISP2_K07_L2F1_H01_E00_N900","fmt":"A1","fl":"0","rev":"","mb":0.4},{"k":"1. sal","file":"../v2/tegninger/plan-F1-1sal.pdf","t":"L2F1 – 1. sal","nr":"ISP2_K07_L2F1_H01_E01_N901","fmt":"A1","fl":"1","rev":"","mb":0.5},{"k":"2. sal","file":"../v2/tegninger/plan-F1-2sal.pdf","t":"L2F1 – 2. sal","nr":"ISP2_K07_L2F1_H01_E02_N902","fmt":"A1","fl":"2","rev":"","mb":0.5},{"k":"3. sal","file":"../v2/tegninger/plan-F1-3sal.pdf","t":"L2F1 – 3. sal","nr":"ISP2_K07_L2F1_H01_E03_N903","fmt":"A1","fl":"3","rev":"","mb":0.5},{"k":"Tag","file":"../v2/tegninger/plan-F1-tag.pdf","t":"L2F1 – Tag (solceller)","nr":"ISP2_K07_L2F1_H01_ETG_N904","fmt":"A1","fl":"TAG","rev":"","mb":0.3}]},{"g":"FX","name":"Blok F","sub":"fælles kælder under F1–F3","for":["F1","F2","F3"],"items":[{"k":"Kælder el","file":"../v2/tegninger/plan-FX-kaelder-el.pdf","t":"L2FX – Kælder: føringsveje, kraft og svagstrøm","nr":"ISP2_K07_L2FX_H01_EKL_N911","fmt":"A0","fl":"K","rev":"Rev. 2 (24.08.2026)","mb":0.8},{"k":"Kælder lys","file":"../v2/tegninger/plan-FX-kaelder-lys.pdf","t":"L2FX – Lysinstallationer i kælder","nr":"ISP2_K07_L2FX_H01_EKL_N411","fmt":"A0","fl":"K","rev":"Rev. 2 (24.08.2026)","mb":0.4}]}];
+const planG=g=>PLANS.find(x=>x.g===g);
+const planIt=(g,k)=>{const G=planG(g);return G&&G.items.find(x=>x.k===k)};
+const planKey=(G,x)=>G.g+"|plan|"+x.k;                       // fx "F1|plan|Stue", "FX|plan|Kælder lys"
+const planNr=x=>x.nr.split("_").pop();                       // N900
+const planCap=(G,x)=>`Bygningsplan ${G.name} · ${x.k} – ${x.t} · ${planNr(x)}${x.rev?" · "+x.rev:""}`;
+const planDoc=file=>{for(const G of PLANS)for(const x of G.items)if(x.file===file)return x;return null};
 const tgOL=(b,o)=>o?b+"-"+o:b;               // K1-A, J2-B, K3
 const tgDesc=d=>d.t.replace(/,?\s*Byg [A-G]\d?\b/,"")+(d.x?" · fælles "+[d.o].concat(d.x).join("/"):"")+(d.r?" · Rev. 1 (01.06.2026)":"");
 const tgOLd=(b,d)=>tgOL(b,[d.o].concat(d.x||[]).join("/"));
@@ -162,7 +171,9 @@ function unitsOf(og,f){if(f==="TAG")return[{k:"TAG",name:"Tag"}];
   if(!span)l.push({k:"OG",name:"Opgang / trappe"});return l}
 function unitOf(og,f,k){return unitsOf(og,f).find(u=>u.k===k)}
 const locKey=(og,f,k)=>og+"|"+f+"|"+k;
-function locInfo(key){const[oid,f,k]=key.split("|");const og=ogById(oid);const u=og&&unitOf(og,f,k);
+function locInfo(key){const[oid,f,k]=key.split("|");
+  if(f==="plan"){const G=planG(oid),x=planIt(oid,k);const nm=G?G.name:oid;return{og:oid,f,k,opgang:nm,etage:"Bygningsplan",bolig:k,side:x?planNr(x):"",label:nm+" · Bygningsplan · "+k}}
+  const og=ogById(oid);const u=og&&unitOf(og,f,k);
   return{og:oid,f,k,opgang:oid,etage:flName(f),bolig:u?u.name:k,side:/^[A-Z]\d-\d+$/.test(k)?k:"",
     label:oid+(f==="TAG"?" · Tag":" · "+flName(f)+" · "+(u?u.name:k)+(/^[A-Z]\d-\d+$/.test(k)?" ("+k+")":""))}}
 function rowLabel(r){return r.opgang+(r.etage==="Tag"?" · Tag":" · "+r.etage+" · "+r.bolig+(r.side?" ("+r.side+")":""))}
@@ -221,9 +232,9 @@ let PDFJS=null;const DOCS={};
 async function pdfjs(){if(!PDFJS){const m=await import("../v2/pdfjs/pdf.min.mjs");m.GlobalWorkerOptions.workerSrc=new URL("../v2/pdfjs/pdf.worker.min.mjs",location.href).href;PDFJS=m}return PDFJS}
 async function getBuf(url){let c=null;try{c=await caches.open(TGC)}catch(e){}let r=c?await c.match(url):null;
   if(!r){r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status);if(c){try{await c.put(url,r.clone())}catch(e){}}}return await r.arrayBuffer()}
-function tgDocFor(b){if(DOCS[b])return DOCS[b];const f=b==="F"?TGF:b==="FF"?TGFF:TG[b];
+function tgDocFor(b){if(DOCS[b])return DOCS[b];const f=b==="F"?TGF:b==="FF"?TGFF:b.startsWith("P:")?planDoc(b.slice(2)):TG[b];
   for(const k in DOCS)if(k!=="F"&&k!=="FF"){const p=DOCS[k];delete DOCS[k];p.then(d=>d.destroy()).catch(()=>{})}
-  tgMsg(`Henter tegninger for ${b==="F"||b==="FF"?"signaturer/situationsplan":"bygning "+b} (${String(f.mb).replace(".",",")} MB)…`);
+  tgMsg(`Henter tegninger for ${b==="F"||b==="FF"?"signaturer/situationsplan":b.startsWith("P:")?"bygningsplan":"bygning "+b} (${String(f.mb).replace(".",",")} MB)…`);
   const p=(async()=>{const lib=await pdfjs();const buf=await getBuf(f.file);return await lib.getDocument({data:new Uint8Array(buf),isEvalSupported:false}).promise})();
   DOCS[b]=p;p.catch(()=>{if(DOCS[b]===p)delete DOCS[b]});return p}
 const TV={list:[],i:0,page:null,z:1,tx:0,ty:0,fit:1,pw:0,ph:0,W:0,H:0,bk:1,tok:0,rt:null,dt:null,det:null,timer:0};
@@ -237,7 +248,7 @@ async function tgLoad(){const it=TV.list[TV.i];const tok=++TV.tok;tgClear();TV.p
   catch(e){if(tok!==TV.tok||(e&&e.name==="RenderingCancelledException"))return;const m=String(e&&e.message||e);const net=!navigator.onLine||e instanceof TypeError||/fetch|network|load failed|HTTP 5/i.test(m);
     tgMsg(net?"Tegningen er ikke gemt på telefonen endnu, og der er ingen forbindelse. Åbn den igen, når du har net – så gemmes den til offline brug.":"Tegningen kunne ikke åbnes: "+m)}}
 function tgDims(){const st=$("tgstage");TV.W=st.clientWidth;TV.H=st.clientHeight}
-function tgFit(){tgDims();const v=TV.page.getViewport({scale:1});TV.fit=Math.min(TV.W/v.width,TV.H/v.height);TV.pw=v.width*TV.fit;TV.ph=v.height*TV.fit;TV.z=1;TV.tx=(TV.W-TV.pw)/2;TV.ty=(TV.H-TV.ph)/2;tgApply()}
+function tgFit(){tgDims();const v=TV.page.getViewport({scale:1});TV.fit=Math.min(TV.W/v.width,TV.H/v.height);ZMAX=Math.min(64,Math.max(24,4/TV.fit));TV.pw=v.width*TV.fit;TV.ph=v.height*TV.fit;TV.z=1;TV.tx=(TV.W-TV.pw)/2;TV.ty=(TV.H-TV.ph)/2;tgApply()}
 async function tgBase(tok){const dpr=window.devicePixelRatio||1;TV.bk=Math.max(1,Math.min(2*dpr,Math.sqrt(6e6/(TV.pw*TV.ph))));
   const c=$("tgbase");const vp=TV.page.getViewport({scale:TV.fit*TV.bk});c.width=Math.floor(vp.width);c.height=Math.floor(vp.height);c.style.width=TV.pw+"px";c.style.height=TV.ph+"px";tgApply();
   const ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);const t=TV.page.render({canvasContext:ctx,viewport:vp});TV.rt=t;await t.promise;if(TV.rt===t)TV.rt=null;if(tok===TV.tok)tgSched()}
@@ -253,7 +264,7 @@ async function tgDetail(){if(!TV.page||TV.rt)return;const tok=TV.tok;if(TV.dt){t
   c.st=st;if(TV.det){TV.det.width=0;TV.det.remove()}$("tgstage").insertBefore(c,$("tgmsg"));TV.det=c;tgApply()}
 function tgClamp(){const w=TV.pw*TV.z,h=TV.ph*TV.z,W=TV.W,H=TV.H;
   TV.tx=w<=W?(W-w)/2:Math.min(W*0.25,Math.max(W*0.75-w,TV.tx));TV.ty=h<=H?(H-h)/2:Math.min(H*0.25,Math.max(H*0.75-h,TV.ty))}
-const ZMIN=1,ZMAX=24;
+const ZMIN=1;let ZMAX=24;   // sættes pr. side i tgFit: store A0/A1-ark kan zoomes længere
 function tgZoomAt(z,x,y){if(!TV.page)return;z=Math.min(ZMAX,Math.max(ZMIN,z));const r=z/TV.z;TV.tx=x-(x-TV.tx)*r;TV.ty=y-(y-TV.ty)*r;TV.z=z;tgClamp();tgApply();tgSched()}
 function tgZoomBy(k){tgZoomAt(TV.z*k,TV.W/2,TV.H/2)}
 function tgReset(){if(!TV.page)return;TV.z=1;tgClamp();tgApply();tgSched()}
@@ -295,8 +306,9 @@ function render(){const items=openItems();$("t_tg").classList.toggle("on",P.tab=
   const nn=newCount();$("fejlN").textContent=nn||"";$("fejlN").style.display=nn?"":"none";updQueue();
   $("main").innerHTML=P.tab==="fejl"?fejlView(items):tgView();if($("tgv").classList.contains("on"))tgAfvUpd();$("fabw").innerHTML=P.tab==="tg"&&P.og&&P.f&&P.k?`<div class="fab"><button class="btn w xl" onclick="openForm()">⚠ Afvigelse</button></div>`:""}
 function tgView(){const c=counts();const og=ogById(P.og);
-  if(!og){let h=`<h2>Vælg opgang</h2>`;Object.keys(TG).forEach(b=>{h+=`<h3>Bygning ${b}</h3><div class="grid">`+OGS.filter(x=>x.b===b).map(x=>`<button class="big" onclick="go('${x.id}')">${x.id}<small>${x.rk?"Rækkehus":x.fls.map(flShort).join(" · ")}</small>${badge(c[x.id])}</button>`).join("")+`</div>`});
-    return h+`<div class="card"><div class="row"><button class="btn" onclick="tgOpenF(1)">🗺 Situationsplan</button><button class="btn" onclick="tgOpenF(2)">Signaturforklaring</button></div><div style="height:10px"></div><button class="btn" id="pfb" onclick="prefetchAll()">⬇ Gem alle tegninger på telefonen (ca. 34 MB – brug wifi)</button><div class="mut" id="pfs"></div></div>`}
+  if(P.og==="PLANER"||P.f==="plan")return planView(c);
+  if(!og){const pn=PLANS.reduce((a,G)=>a+(c[G.g+"|plan"]||0),0);let h=`<button class="big wide" style="width:100%;margin:0 0 12px" onclick="go('PLANER')">🏢 Bygningsplaner<small>Hele etager, kælder og tag – ${PLANS.map(G=>G.name).join(", ")}</small>${badge(pn)}</button><h2>Vælg opgang</h2>`;Object.keys(TG).forEach(b=>{h+=`<h3>Bygning ${b}</h3><div class="grid">`+OGS.filter(x=>x.b===b).map(x=>`<button class="big" onclick="go('${x.id}')">${x.id}<small>${x.rk?"Rækkehus":x.fls.map(flShort).join(" · ")}</small>${badge(c[x.id])}</button>`).join("")+`</div>`});
+    return h+`<div class="card"><div class="row"><button class="btn" onclick="tgOpenF(1)">🗺 Situationsplan</button><button class="btn" onclick="tgOpenF(2)">Signaturforklaring</button></div><div style="height:10px"></div><button class="btn" id="pfb" onclick="prefetchAll()">⬇ Gem alle tegninger på telefonen (ca. 38 MB – brug wifi)</button><div class="mut" id="pfs"></div></div>`}
   if(!P.f){let h=`<button class="back" onclick="go()">‹ Alle opgange</button><h2>${og.id}</h2><h3>Vælg etage</h3><div class="grid">`;
     h+=og.fls.slice().reverse().map(f=>`<button class="big" onclick="go('${og.id}','${f}')">${flName(f)}<small>${unitsOf(og,f).filter(u=>u.d).map(u=>u.name).join(" · ")}</small>${badge(c[og.id+"|"+f])}</button>`).join("");
     h+=`<button class="big" onclick="go('${og.id}','TAG','TAG')">🏠 Tag<small>Solceller, røgopluk …</small>${badge(c[og.id+"|TAG"])}</button></div>`;
@@ -309,10 +321,10 @@ function tgView(){const c=counts();const og=ogById(P.og);
   h+=`<button class="btn p xl" onclick="openLoc()">📐 Vis tegning</button>`;
   h+=ex.length?`<div class="warnbox"><b>${ex.length===1?"1 åben afvigelse":ex.length+" åbne afvigelser"} her</b><div class="mut">Tjek at din fejl ikke allerede er registreret.</div></div>`+ex.map(itemCard).join(""):`<p class="mut" style="margin-top:14px">Ingen åbne afvigelser her.</p>`;
   return h}
-function openLoc(){const og=ogById(P.og);if(P.k==="OG"||P.k==="TAG")return tgOpenOv(og.b,locKey(og.id,P.f,P.k));tgOpenD(P.k,P.f==="R"?null:P.f,og.id,P.f)}
+function openLoc(){if(P.f==="plan")return planOpen(P.og,P.k);const og=ogById(P.og);if(P.k==="OG"||P.k==="TAG")return tgOpenOv(og.b,locKey(og.id,P.f,P.k));tgOpenD(P.k,P.f==="R"?null:P.f,og.id,P.f)}
 function fejlView(items){const fo=P.filter||"";const l=items.filter(r=>!fo||r.opgang===fo);
   let h=`<div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">Fejlliste</h2><button class="btn" onclick="refresh()">↻ Opdater</button></div>`;
-  h+=`<select onchange="P.filter=this.value;saveP();render()"><option value="">Alle opgange (${items.length})</option>${OGS.map(o=>{const n=items.filter(r=>r.opgang===o.id).length;return `<option value="${o.id}" ${fo===o.id?"selected":""}>${o.id}${n?" ("+n+")":""}</option>`}).join("")}</select>`;
+  h+=`<select onchange="P.filter=this.value;saveP();render()"><option value="">Alle opgange (${items.length})</option>${OGS.map(o=>{const n=items.filter(r=>r.opgang===o.id).length;return `<option value="${o.id}" ${fo===o.id?"selected":""}>${o.id}${n?" ("+n+")":""}</option>`}).join("")}<optgroup label="Bygningsplaner">${PLANS.map(G=>{const n=items.filter(r=>r.opgang===G.name).length;return `<option value="${esc(G.name)}" ${fo===G.name?"selected":""}>${esc(G.name)} – bygningsplaner${n?" ("+n+")":""}</option>`}).join("")}</optgroup></select>`;
   h+=`<p class="mut">${LIST_ERR?"⚠ "+esc(LIST_ERR):P.listAt?"Opdateret "+fmtT(new Date(P.listAt).toISOString())+". Træk ned for at opdatere.":""}</p>`;
   return h+(l.length?l.map(itemCard).join(""):`<div class="card mut">Ingen åbne afvigelser${fo?" i "+fo:""}. 👍</div>`)}
 function itemCard(r){const th=(r.thumbs||[]).map((t,i)=>`<img src="data:image/jpeg;base64,${t}" onclick="showPhoto('${r.id}',${i})" alt="">`).join("");
@@ -380,6 +392,16 @@ function closePhoto(){$("photo").classList.remove("on");$("pimg").src=""}
 function tgOpenD(s,f,ogid,fl){const r=tgBySide(s);if(!r)return;const{b,d}=r;const og=ogid&&ogById(ogid);const ff=f&&d.f.includes(f)?f:null;
   const l=og&&fl&&og.fls.includes(fl)?unitsOf(og,fl).filter(u=>u.d).map(u=>u.d):d.f.length>1?tgList(b,d.o).filter(x=>spanKey(x)===spanKey(d)):tgList(b,d.o,ff||d.f[0]);
   tgShow(l.map(x=>({b,p:x.p,cap:tgCap(b,x),loc:locKey(ogid,fl,x.s)})),l.indexOf(d))}
+function planView(c){
+  if(P.f==="plan"){const G=planG(P.og),x=planIt(P.og,P.k);if(!x){P.og="PLANER";P.f=P.k="";return planView(c)}
+    const key=planKey(G,x);const L=locInfo(key);const ex=openItems().filter(r=>r.loc===key);
+    let h=`<button class="back" onclick="go('PLANER')">‹ Bygningsplaner</button><h2>${esc(L.label)}</h2><p class="mut" style="margin-top:-6px">${esc(x.t)} · ${esc(x.nr)} · ${x.fmt}${x.rev?" · "+esc(x.rev):""}</p>`;
+    h+=`<button class="btn p xl" onclick="openLoc()">📐 Vis plan</button>`;
+    return h+(ex.length?`<div class="warnbox"><b>${ex.length===1?"1 åben afvigelse":ex.length+" åbne afvigelser"} her</b><div class="mut">Tjek at din fejl ikke allerede er registreret.</div></div>`+ex.map(itemCard).join(""):`<p class="mut" style="margin-top:14px">Ingen åbne afvigelser her.</p>`)}
+  let h=`<button class="back" onclick="go()">‹ Alle opgange</button><h2>🏢 Bygningsplaner</h2><p class="mut">Hele etager med trapper, fællesarealer, erhverv m.m. Vælg en plan – derfra kan du melde en afvigelse.</p>`;
+  PLANS.forEach(G=>{h+=`<h3>${esc(G.name)}${G.sub?` <span class="mut" style="font-weight:400">– ${esc(G.sub)}</span>`:""}</h3><div class="grid">`+G.items.map(x=>`<button class="big" onclick="go('${G.g}','plan','${esc(x.k)}')">${esc(x.k)}<small>${planNr(x)} · ${x.fmt}${x.rev?" · rev. "+x.rev.replace(/^Rev\. /,""):""}</small>${badge(c[planKey(G,x)])}</button>`).join("")+`</div>`});
+  return h}
+function planOpen(g,k){const G=planG(g);if(!G)return;const i=Math.max(0,G.items.findIndex(x=>x.k===k));tgShow(G.items.map(x=>({b:"P:"+x.file,p:1,cap:planCap(G,x),loc:planKey(G,x)})),i)}
 function tgOpenOv(b,loc){tgShow([{b,p:TG[b].ov,cap:"Oversigtsplan · "+b,loc},{b,p:TG[b].idx,cap:"Index · bygning "+b,loc}],0)}
 function tgOpenF(p){tgShow([{b:"FF",p:2,cap:"Signaturforklaring og noter · F1–F6"},{b:"FF",p:1,cap:"Situationsplan / nøgleplan · F1–F6"},{b:"F",p:2,cap:"Signaturforklaring og noter · I1–K3"},{b:"F",p:1,cap:"Situationsplan / nøgleplan · I1–K3"}],p===2?0:1)}
 function tgClose(){TV.tok++;tgClear();TV.page=null;$("tgv").classList.remove("on");document.body.style.overflow="";tgMsg("");render()}
@@ -388,7 +410,7 @@ function tgAfv(){const it=TV.list[TV.i];if(it&&it.loc)openForm(it.loc)}
 function tgShowExisting(){const it=TV.list[TV.i];if(!it||!it.loc)return;const[o,f,k]=it.loc.split("|");tgClose();P.tab="tg";go(o,f,k)}
 
 /* Gem alle tegninger til offline brug */
-async function prefetchAll(){const fs=["../v2/pdfjs/pdf.min.mjs","../v2/pdfjs/pdf.worker.min.mjs",TGF.file,TGFF.file,...Object.values(TG).map(x=>x.file)];let i=0;const b=$("pfb");if(b)b.disabled=true;
+async function prefetchAll(){const fs=["../v2/pdfjs/pdf.min.mjs","../v2/pdfjs/pdf.worker.min.mjs",TGF.file,TGFF.file,...Object.values(TG).map(x=>x.file),...PLANS.flatMap(G=>G.items.map(x=>x.file))];let i=0;const b=$("pfb");if(b)b.disabled=true;
   try{for(const f of fs){i++;const e=$("pfs");if(e)e.textContent="Henter "+i+" af "+fs.length+" …";await getBuf(f)}const e=$("pfs");if(e)e.textContent="✅ Alle tegninger er gemt – de kan nu åbnes uden net.";toast("Alle tegninger er gemt på telefonen")}
   catch(x){const e=$("pfs");if(e)e.textContent="Stoppede ved fil "+i+": "+(x.message||x)+". Prøv igen på wifi.";}if(b)b.disabled=false}
 
