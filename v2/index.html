@@ -298,7 +298,7 @@ function unitNameBtns(s){const r=tgBySide(s);if(!r)return "";const ok=tgOk(r.d);
 function floorHTML(o,f,uf,print){let h=print?"":tgFloorCard(o,f);const us=unitsOf(o,f);
   if(!print&&us.length>1)h+=`<div class="chips noprint"><button class="${!uf?"on":""}" onclick="S.uf='';save();render()">Alle</button>${us.map(u=>`<button class="${uf===u?"on":""}" onclick="S.uf='${u}';save();render()">${unName(o,f,u)}</button>`).join("")}</div>`;
   us.forEach(u=>{if(uf&&uf!==u)return;const l=S.boxes.filter(b=>b.og===o.id&&b.fl===f&&b.un===u);if(print&&!l.length)return;h+=unitHead(o,f,u,l);l.forEach(b=>h+=boxHTML(b))});return h}
-function tagView(o,print){const l=S.tag.filter(t=>t.og===o.id);let h="";
+function tagView(o,print){const l=S.tag.filter(t=>t.og===o.id);let h=print?"":planCardFor(o,"TAG");
   if(!print)h+=`<div class="card" style="background:#eef2ff"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Tag · ${esc(o.name)}</h2><span class="mut">${l.length} punkter</span></div><p class="mut" style="margin:6px 0">Noter og afvigelser der ikke hører til en dåse, fx solceller, røgopluk og gennemføringer.</p><button class="btn p" onclick="tadd()">+ Nyt punkt på taget</button></div>`;
   l.forEach(t=>h+=tagHTML(t));return h}
 function overview(o){let h="";
@@ -318,7 +318,7 @@ ${fl.map(f=>`<tr><td><a href="#" onclick="go('f:${f}');return false">${flName(f)
   return h}
 function overviewAuto(o,mine,all,np){let h="";const fl=floorsOf(o).slice().reverse();const tl=S.tag.filter(t=>t.og===o.id);const ta=tl.filter(t=>t.status==="afvigelse").length;
   h+=`<div class="card"><h2>${esc(o.name)}${o.rk?' <span class="mut">· rækkehus</span>':""}</h2><p>${all.n} dåser · <span class="pill ok">${all.ok} OK</span> <span class="pill bad">${all.bad} med afvigelse</span> <span class="pill">📷 ${np}</span></p>
-<div class="tblw"><table class="ov ova"><tr><td><a href="#" onclick="go('tag');return false">Tag</a></td><td class="c" style="text-align:left" onclick="go('tag')">${tl.length?`${tl.length} punkter${ta?` · <b>${ta} afv.</b>`:""}`:'<span class="mut">–</span>'}</td></tr>
+${planFor(o.tgB).length?`<div class="chips noprint" style="margin:0 0 8px"><span class="mut" style="align-self:center">Bygningsplaner:</span>${planFor(o.tgB).map(planChip).join("")}</div>`:""}<div class="tblw"><table class="ov ova"><tr><td><a href="#" onclick="go('tag');return false">Tag</a></td><td class="c" style="text-align:left" onclick="go('tag')">${tl.length?`${tl.length} punkter${ta?` · <b>${ta} afv.</b>`:""}`:'<span class="mut">–</span>'}</td></tr>
 ${fl.map(f=>`<tr><td><a href="#" onclick="go('f:${f}');return false">${flName(f)}</a></td><td style="text-align:left;white-space:normal">${unitsOf(o,f).map(u=>{const c=counts(mine.filter(b=>b.fl===f&&b.un===u));return `<button class="ub" onclick="go('f:${f}','${u}')">${esc(unShort(o,f,u))}${u!=="OG"?` <span class="mut" style="font-size:12px">${u}</span>`:""} <span class="mut">${c.n?c.n+(c.bad?` <b style="color:var(--bad)">${c.bad}!</b>`:" ✓"):"–"}</span></button>`}).join("")}</td></tr>`).join("")}</table></div>
 <p class="mut">Tryk på en bolig for at registrere dåser. Tal = registrerede dåser (✓ = ingen afvigelser), rødt tal = dåser med afvigelse.${o.rk?" Rækkehuset har én tegning for stue til 2. sal.":floorsOf(o).some(f=>/-/.test(f))?" Duplexboligerne har én tegning for "+flName(floorsOf(o).find(f=>/-/.test(f)))+".":""}${tgList(o.tgB,o.tgO).some(d=>d.x)?" Bofællesskabet markeret B1/B2 ligger mellem B1 og B2 og vises under begge.":""}</p></div>`;
   const hid=mine.filter(b=>hidden(b,o));if(hid.length){h+=`<div class="sec">Skjulte dåser (${hid.length})</div>`;hid.forEach(b=>h+=boxHTML(b,flName(b.fl)+" · "+b.un))}
@@ -413,6 +413,16 @@ const TGFLS=["st","1","2","3","4","5"];
 const TGFL=f=>f==="st"?"Stue":f+". sal";
 const dfl2tg=f=>tgf(f);
 const ogLbl=o=>o?"Byg "+o:"Hele bygningen";
+/* ===== Bygningsplaner (kun visning). Datadrevet: tilføj en gruppe/linje her for flere bygninger. for = hvilke bygningers opgange viser genvejen; fl = etage (0, 1 … , K = kælder, TAG) ===== */
+const PLANS=[{"g":"F1","name":"F1","for":["F1"],"items":[{"k":"Stue","file":"tegninger/plan-F1-stue.pdf","t":"L2F1 – Stue (inkl. erhverv/butik)","nr":"ISP2_K07_L2F1_H01_E00_N900","fmt":"A1","fl":"0","rev":"","mb":0.4},{"k":"1. sal","file":"tegninger/plan-F1-1sal.pdf","t":"L2F1 – 1. sal","nr":"ISP2_K07_L2F1_H01_E01_N901","fmt":"A1","fl":"1","rev":"","mb":0.5},{"k":"2. sal","file":"tegninger/plan-F1-2sal.pdf","t":"L2F1 – 2. sal","nr":"ISP2_K07_L2F1_H01_E02_N902","fmt":"A1","fl":"2","rev":"","mb":0.5},{"k":"3. sal","file":"tegninger/plan-F1-3sal.pdf","t":"L2F1 – 3. sal","nr":"ISP2_K07_L2F1_H01_E03_N903","fmt":"A1","fl":"3","rev":"","mb":0.5},{"k":"Tag","file":"tegninger/plan-F1-tag.pdf","t":"L2F1 – Tag (solceller)","nr":"ISP2_K07_L2F1_H01_ETG_N904","fmt":"A1","fl":"TAG","rev":"","mb":0.3}]},{"g":"FX","name":"Blok F","sub":"fælles kælder under F1–F3","for":["F1","F2","F3"],"items":[{"k":"Kælder el","file":"tegninger/plan-FX-kaelder-el.pdf","t":"L2FX – Kælder: føringsveje, kraft og svagstrøm","nr":"ISP2_K07_L2FX_H01_EKL_N911","fmt":"A0","fl":"K","rev":"Rev. 2 (24.08.2026)","mb":0.8},{"k":"Kælder lys","file":"tegninger/plan-FX-kaelder-lys.pdf","t":"L2FX – Lysinstallationer i kælder","nr":"ISP2_K07_L2FX_H01_EKL_N411","fmt":"A0","fl":"K","rev":"Rev. 2 (24.08.2026)","mb":0.4}]}];
+const planNr=x=>x.nr.split("_").pop();
+const planCap=(G,x)=>`Bygningsplan ${G.name} · ${x.k} – ${x.t} · ${planNr(x)}${x.rev?" · "+x.rev:""}`;
+const planDoc=file=>{for(const G of PLANS)for(const x of G.items)if(x.file===file)return x;return null};
+function planOpen(g,k){const G=PLANS.find(x=>x.g===g);if(!G)return;const i=Math.max(0,G.items.findIndex(x=>x.k===k));tgShow(G.items.map(x=>({b:"P:"+x.file,p:1,cap:planCap(G,x)})),i)}
+const planFor=(b,f)=>PLANS.filter(G=>G.for.includes(b)).flatMap(G=>G.items.filter(x=>f==null||x.fl===f).map(x=>({G,x})));
+const planChip=({G,x})=>`<button onclick="planOpen('${G.g}','${esc(x.k)}')">🏢 ${G.g==="FX"?esc(x.k):"Plan "+esc(x.k)}</button>`;
+function planCardFor(o,f){if(!o||!o.tgB)return "";const l=planFor(o.tgB,f);if(!l.length)return "";return `<div class="card noprint" style="padding:10px"><b>🏢 Bygningsplan</b><div class="chips" style="margin:8px 0 0">${l.map(planChip).join("")}</div></div>`}
+function planSection(){return `<div class="card"><h2>🏢 Bygningsplaner</h2><p class="mut" style="margin:0 0 6px">Hele etager med trapper, fællesarealer, erhverv, kælder og tag. Kun til at se – afvigelser meldes i SP2 El-planer.</p>${PLANS.map(G=>`<div class="lbl">${esc(G.name)}${G.sub?" – "+esc(G.sub):""}</div><div class="chips">${G.items.map(x=>`<button onclick="planOpen('${G.g}','${esc(x.k)}')">${esc(x.k)} <span class="mut">${planNr(x)}${x.rev?" · "+esc(x.rev.replace(/ \(.*\)/,"").toLowerCase()):""}</span></button>`).join("")}</div>`).join("")}</div>`}
 const tgOL=(b,o)=>o?b+"-"+o:b;          // K1-A, J2-B, K3
 const tgDesc=d=>d.t.replace(/,?\s*Byg [A-G]\d?\b/,"")+(d.x?" · fælles "+[d.o].concat(d.x).join("/"):"")+(d.r?" · Rev. 1 (01.06.2026)":"");
 const tgOLd=(b,d)=>tgOL(b,[d.o].concat(d.x||[]).join("/"));
@@ -440,7 +450,7 @@ function tgCard(d,b,f,k){const n=tgName(d),c=tgOk(d);
 <div class="row"><input value="${esc(n)}" style="flex:1;min-width:110px" placeholder="fx tv., th., 1.2" aria-label="Navn på bolig ${esc(d.s)}" onchange="tgSetName('${d.s}',this.value)">${c?`<button class="btn" onclick="tgUnset('${d.s}')">Brug forslag${d.g?" ("+esc(d.g)+")":""}</button>`:`<button class="btn" onclick="tgSetName('${d.s}','${esc(d.g)}')">✓ Bekræft</button>`}</div>
 <div class="qn">${tgQuick(d,k,f).map(q=>`<button class="${n===q?"on":""}" onclick="tgSetName('${d.s}','${q}')">${q}</button>`).join("")}</div>
 <div class="mut" style="margin-top:6px;font-size:12px">${esc(d.w)}</div></div>`}
-function tegnView(){const t=tgSel();let h=`<div class="card"><h2>Tegninger</h2><p class="mut" style="margin:0 0 6px">Elinstallationer – princip og bestykning, lejlighedsplaner (Artelia, 27.02.2026${TG[t.b]&&TG[t.b].fx?"; F1 B2-sider rev. 1 01.06.2026":""}).</p>
+function tegnView(){const t=tgSel();let h=planSection()+`<div class="card"><h2>Tegninger</h2><p class="mut" style="margin:0 0 6px">Elinstallationer – princip og bestykning, lejlighedsplaner (Artelia, 27.02.2026${TG[t.b]&&TG[t.b].fx?"; F1 B2-sider rev. 1 01.06.2026":""}).</p>
 <div class="lbl">Bygning</div><div class="chips">${Object.keys(TG).map(x=>`<button class="${x===t.b?"on":""}" onclick="tgPick('b','${x}')">${x}</button>`).join("")}</div>
 <div class="lbl">Opgang</div><div class="chips">${tgOgs(t.b).map(o=>`<button class="${o===t.o?"on":""}" onclick="tgPick('o','${o}')">${tgOL(t.b,o)}</button>`).join("")}</div>
 <div class="lbl">Etage</div><div class="chips">${tgFls(t.b,t.o).map(f=>`<button class="${f===t.f?"on":""}" onclick="tgPick('f','${f}')">${TGFL(f)}</button>`).join("")}</div>
@@ -449,14 +459,14 @@ function tegnView(){const t=tgSel();let h=`<div class="card"><h2>Tegninger</h2><
   h+=`<div class="sec">${tgOL(t.b,t.o)} · ${TGFL(t.f)} – ${l.length} ${l.length===1?"tegning":"tegninger"}</div>`;
   if(!lk.length)h+=`<p class="mut">Tip: Tilknyt en opgang til ${tgOL(t.b,t.o)} under ⚙︎ Opsætning, så får du en "Tegning"-knap ved hver bolig.</p>`;
   l.forEach(d=>h+=tgCard(d,t.b,t.f,l.length));
-  h+=`<div class="card"><h2>Offline</h2><p class="mut" style="margin:0 0 8px">En tegning gemmes på telefonen, første gang du åbner den. Vil du have alle tegninger med ud på pladsen, så hent dem på forhånd over wifi (ca. 34 MB).</p><div class="row"><button class="btn" onclick="tgPrefetch()">⬇︎ Hent alle tegninger til offline brug</button></div><p class="mut" id="tgpf"></p></div>`;
+  h+=`<div class="card"><h2>Offline</h2><p class="mut" style="margin:0 0 8px">En tegning gemmes på telefonen, første gang du åbner den. Vil du have alle tegninger med ud på pladsen, så hent dem på forhånd over wifi (ca. 38 MB).</p><div class="row"><button class="btn" onclick="tgPrefetch()">⬇︎ Hent alle tegninger til offline brug</button></div><p class="mut" id="tgpf"></p></div>`;
   setTimeout(tgOfflineStatus,0);return h}
 async function tgOfflineStatus(){const e=$("tgpf");if(!e||!("caches" in window))return;try{const c=await caches.open(TGC);let n=0;const k=Object.keys(TG);for(const b of k)if(await c.match(TG[b].file))n++;e.textContent=n===k.length?"Alle tegninger er gemt på telefonen.":n+" af "+k.length+" bygninger er gemt på telefonen."}catch(x){}}
-async function tgPrefetch(){const e=$("tgpf");const files=["pdfjs/pdf.min.mjs","pdfjs/pdf.worker.min.mjs",TGF.file,TGFF.file,...Object.values(TG).map(x=>x.file)];let i=0;
+async function tgPrefetch(){const e=$("tgpf");const files=["pdfjs/pdf.min.mjs","pdfjs/pdf.worker.min.mjs",TGF.file,TGFF.file,...Object.values(TG).map(x=>x.file),...PLANS.flatMap(G=>G.items.map(x=>x.file))];let i=0;
   try{const c=await caches.open(TGC);for(const f of files){e.textContent="Henter "+(++i)+" af "+files.length+"…";if(!(await c.match(f)))await c.add(f)}e.textContent="Færdig – alle tegninger er gemt på telefonen.";toast("Tegninger gemt til offline brug")}catch(x){e.textContent="Kunne ikke hente alt ("+(x.message||x)+"). Tjek forbindelsen og prøv igen."}}
 /* Knapper i dåse-visningen */
-function tgFloorCard(o,f){if(!o.tgB||!TG[o.tgB]||f==="K")return "";const tf=tgf(f);const l=tgList(o.tgB,o.tgO||"",tf);
-  return `<div class="card noprint" style="padding:10px"><div class="row" style="justify-content:space-between"><b>📐 Tegninger · ${tgOL(o.tgB,o.tgO||"")} · ${flName(f)}</b></div><div class="chips" style="margin:8px 0 0">${l.map(d=>`<button onclick="tgOpenD('${d.s}','${tf}')">${esc(tgName(d)||"?")} <span class="mut">(${d.s})</span></button>`).join("")}<button onclick="tgOpenOv('${o.tgB}')">🗺 Oversigtsplan</button></div>${l.length?"":`<p class="mut">Ingen tegninger for denne etage.</p>`}</div>`}
+function tgFloorCard(o,f){if(!o.tgB||!TG[o.tgB])return "";if(f==="K")return planCardFor(o,"K");const tf=tgf(f);const l=tgList(o.tgB,o.tgO||"",tf);const pc=planFor(o.tgB,f==="R"?"0":/^\d-\d$/.test(f)?f[0]:f);
+  return `<div class="card noprint" style="padding:10px"><div class="row" style="justify-content:space-between"><b>📐 Tegninger · ${tgOL(o.tgB,o.tgO||"")} · ${flName(f)}</b></div><div class="chips" style="margin:8px 0 0">${l.map(d=>`<button onclick="tgOpenD('${d.s}','${tf}')">${esc(tgName(d)||"?")} <span class="mut">(${d.s})</span></button>`).join("")}<button onclick="tgOpenOv('${o.tgB}')">🗺 Oversigtsplan</button>${pc.map(planChip).join("")}</div>${l.length?"":`<p class="mut">Ingen tegninger for denne etage.</p>`}</div>`}
 function tgBtn(o,f,u){if(!o.tgB||!TG[o.tgB])return "";if(u==="OG")return `<button class="btn" onclick="tgOpenOv('${o.tgB}')">🗺 Oversigtsplan</button>`;
   if(o.auto)return `<button class="btn" onclick="tgOpenD('${u}','${tgf(f)}')">📐 Tegning</button>`;
   const tf=dfl2tg(f);const l=tgList(o.tgB,o.tgO||"",tf);const m=l.filter(d=>tgName(d)===unName(o,f,u));
@@ -471,9 +481,9 @@ let PDFJS=null;const DOCS={};
 async function pdfjs(){if(!PDFJS){const m=await import("./pdfjs/pdf.min.mjs");m.GlobalWorkerOptions.workerSrc=new URL("pdfjs/pdf.worker.min.mjs",location.href).href;PDFJS=m}return PDFJS}
 async function getBuf(url){let c=null;try{c=await caches.open(TGC)}catch(e){}let r=c?await c.match(url):null;
   if(!r){r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status);if(c){try{await c.put(url,r.clone())}catch(e){}}}return await r.arrayBuffer()}
-function tgDocFor(b){if(DOCS[b])return DOCS[b];const f=b==="F"?TGF:b==="FF"?TGFF:TG[b];
+function tgDocFor(b){if(DOCS[b])return DOCS[b];const f=b==="F"?TGF:b==="FF"?TGFF:b.startsWith("P:")?planDoc(b.slice(2)):TG[b];
   for(const k in DOCS)if(k!=="F"&&k!=="FF"){const p=DOCS[k];delete DOCS[k];p.then(d=>d.destroy()).catch(()=>{})}
-  tgMsg(`Henter tegninger for ${b==="F"||b==="FF"?"signaturer/situationsplan":"bygning "+b} (${String(f.mb).replace(".",",")} MB)…`);
+  tgMsg(`Henter tegninger for ${b==="F"||b==="FF"?"signaturer/situationsplan":b.startsWith("P:")?"bygningsplan":"bygning "+b} (${String(f.mb).replace(".",",")} MB)…`);
   const p=(async()=>{const lib=await pdfjs();const buf=await getBuf(f.file);return await lib.getDocument({data:new Uint8Array(buf),isEvalSupported:false}).promise})();
   DOCS[b]=p;p.catch(()=>{if(DOCS[b]===p)delete DOCS[b]});return p}
 const TV={list:[],i:0,page:null,z:1,tx:0,ty:0,fit:1,pw:0,ph:0,W:0,H:0,bk:1,tok:0,rt:null,dt:null,det:null,timer:0};
@@ -511,7 +521,7 @@ async function tgLoad(){const it=TV.list[TV.i];const tok=++TV.tok;tgClear();TV.p
   catch(e){if(tok!==TV.tok||(e&&e.name==="RenderingCancelledException"))return;const m=String(e&&e.message||e);const net=!navigator.onLine||e instanceof TypeError||/fetch|network|load failed|HTTP 5/i.test(m);
     tgMsg(net?"Tegningen er ikke gemt på telefonen endnu, og der er ingen forbindelse. Åbn den igen, når du har net – så gemmes den til offline brug.":"Tegningen kunne ikke åbnes: "+m)}}
 function tgDims(){const st=$("tgstage");TV.W=st.clientWidth;TV.H=st.clientHeight}
-function tgFit(){tgDims();const v=TV.page.getViewport({scale:1});TV.fit=Math.min(TV.W/v.width,TV.H/v.height);TV.pw=v.width*TV.fit;TV.ph=v.height*TV.fit;TV.z=1;TV.tx=(TV.W-TV.pw)/2;TV.ty=(TV.H-TV.ph)/2;tgApply()}
+function tgFit(){tgDims();const v=TV.page.getViewport({scale:1});TV.fit=Math.min(TV.W/v.width,TV.H/v.height);ZMAX=Math.min(64,Math.max(24,4/TV.fit));TV.pw=v.width*TV.fit;TV.ph=v.height*TV.fit;TV.z=1;TV.tx=(TV.W-TV.pw)/2;TV.ty=(TV.H-TV.ph)/2;tgApply()}
 async function tgBase(tok){const dpr=window.devicePixelRatio||1;TV.bk=Math.max(1,Math.min(2*dpr,Math.sqrt(6e6/(TV.pw*TV.ph))));
   const c=$("tgbase");const vp=TV.page.getViewport({scale:TV.fit*TV.bk});c.width=Math.floor(vp.width);c.height=Math.floor(vp.height);c.style.width=TV.pw+"px";c.style.height=TV.ph+"px";tgApply();
   const ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);const t=TV.page.render({canvasContext:ctx,viewport:vp});TV.rt=t;await t.promise;if(TV.rt===t)TV.rt=null;if(tok===TV.tok)tgSched()}
@@ -527,7 +537,7 @@ async function tgDetail(){if(!TV.page||TV.rt)return;const tok=TV.tok;if(TV.dt){t
   c.st=st;if(TV.det){TV.det.width=0;TV.det.remove()}$("tgstage").insertBefore(c,$("tgmsg"));TV.det=c;tgApply()}
 function tgClamp(){const w=TV.pw*TV.z,h=TV.ph*TV.z,W=TV.W,H=TV.H;
   TV.tx=w<=W?(W-w)/2:Math.min(W*0.25,Math.max(W*0.75-w,TV.tx));TV.ty=h<=H?(H-h)/2:Math.min(H*0.25,Math.max(H*0.75-h,TV.ty))}
-const ZMIN=1,ZMAX=24;
+const ZMIN=1;let ZMAX=24;   // sættes pr. side i tgFit: store A0/A1-ark kan zoomes længere
 function tgZoomAt(z,x,y){if(!TV.page)return;z=Math.min(ZMAX,Math.max(ZMIN,z));const r=z/TV.z;TV.tx=x-(x-TV.tx)*r;TV.ty=y-(y-TV.ty)*r;TV.z=z;tgClamp();tgApply();tgSched()}
 function tgZoomBy(k){tgZoomAt(TV.z*k,TV.W/2,TV.H/2)}
 function tgReset(){if(!TV.page)return;TV.z=1;tgClamp();tgApply();tgSched()}
