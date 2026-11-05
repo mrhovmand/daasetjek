@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Dåsetjek">
+<meta name="theme-color" content="#1c1f24">
+<meta name="robots" content="noindex,nofollow">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<title>Dåsetjek – el-indstøbningsdåser</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1c1f24;--mut:#6b7280;--line:#d9dde3;--ok:#15803d;--bad:#b91c1c;--warn:#b45309;--acc:#1d4ed8}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:env(safe-area-inset-bottom)}
+header{position:sticky;top:0;background:var(--ink);color:#fff;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));z-index:5}
+header h1{font-size:19px;margin:0}header small{color:#cbd5e1}
+.wrap{max-width:760px;margin:0 auto;padding:12px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.tabs button{border:1px solid var(--line);background:var(--card);padding:10px 14px;min-height:44px;border-radius:22px;font-size:16px;color:var(--ink)}
+.tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.card{scroll-margin-top:120px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input,textarea,select{font-size:16px;padding:10px;border:1px solid var(--line);border-radius:8px;width:100%;font-family:inherit;min-height:44px}
+textarea{min-height:70px}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--card);padding:10px 14px;min-height:44px;border-radius:8px;font-size:16px;cursor:pointer;color:var(--ink)}
+.btn.p{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn.d{color:var(--bad)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line);background:#fff;padding:10px 14px;min-height:44px;border-radius:8px;font-size:16px;color:var(--ink);flex:1 1 auto}
+.seg button.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.seg button.bad{background:var(--bad);color:#fff;border-color:var(--bad)}
+.seg button.z{flex:0 0 auto;color:var(--mut)}
+.lbl{font-size:14px;color:var(--mut);margin:10px 0 5px}
+.pill{font-size:13px;padding:3px 9px;border-radius:10px;background:#eef0f3;color:var(--mut);white-space:nowrap}
+.pill.ok{background:#dcfce7;color:var(--ok)}.pill.bad{background:#fee2e2;color:var(--bad)}.pill.w{background:#fef3c7;color:var(--warn)}
+table{width:100%;border-collapse:collapse;font-size:15px}td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+td a{display:inline-block;padding:4px 0}
+h2{font-size:17px;margin:4px 0 8px}
+.mut{color:var(--mut);font-size:14px}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.thumbs img{width:76px;height:76px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer;background:#eee}
+.addph{position:relative;overflow:hidden}
+.addph input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;font-size:0}
+#viewer{position:fixed;inset:0;background:#000;z-index:50;display:none;flex-direction:column;padding:calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom))}
+#viewer.on{display:flex}
+#viewer .img{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+#viewer img{max-width:100%;max-height:100%;object-fit:contain}
+#viewer .bar{display:flex;gap:8px;justify-content:space-between;color:#fff;padding:8px 0}
+#viewer .btn{background:#222;color:#fff;border-color:#444}
+#viewer .btn.d{color:#fca5a5}
+.busy{opacity:.6;pointer-events:none}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;font-size:15px;z-index:60;display:none}
+.printonly{display:none}
+@media print{header,.tabs,.noprint,#viewer,#toast{display:none!important}.printonly{display:block}.card{break-inside:avoid}body{background:#fff}.thumbs img{width:110px;height:110px}input,textarea{border:none;padding:0;min-height:0}}
+
+.top{display:flex;gap:8px;align-items:center}
+.top select{flex:1;font-weight:600;background:#fff}
+.top .btn{flex:0 0 auto}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.chips button{border:1px solid var(--line);background:#fff;padding:8px 12px;min-height:40px;border-radius:18px;font-size:15px;color:var(--ink)}
+.chips button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tblw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ov td,.ov th{text-align:center;white-space:nowrap;padding:8px 5px}.ov td:first-child,.ov th:first-child{text-align:left}
+.ov td.c{cursor:pointer}.ov td.c b{color:var(--bad)}
+#dlg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:none;align-items:flex-end;justify-content:center}
+#dlg.on{display:flex}
+#dlg .sheet{background:var(--card);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+#upd{position:fixed;left:10px;right:10px;top:calc(8px + env(safe-area-inset-top));background:var(--acc);color:#fff;border-radius:12px;padding:10px 14px;z-index:70;display:none;align-items:center;justify-content:space-between;gap:10px;font-size:16px}
+#upd.on{display:flex}#upd button{background:#fff;color:var(--acc);border:none;border-radius:8px;padding:10px 14px;font-size:16px;font-weight:600;min-height:44px}
+.sec{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);margin:16px 0 4px}
+</style>
+</head>
+<body>
+<div id="upd"><span>Ny version af Dåsetjek</span><button onclick="location.reload()">Genindlæs</button></div>
+<header><h1>Dåsetjek</h1><small id="ogsub"></small></header>
+<div class="wrap">
+  <div class="card noprint">
+    <div class="lbl" style="margin-top:0">Opgang</div>
+    <div class="top"><select id="ogsel" onchange="pickOg(this.value)" aria-label="Vælg opgang"></select><button class="btn" onclick="ogDialog(S.cur)" aria-label="Opsætning">⚙︎</button><button class="btn p" onclick="ogDialog()">+ Ny</button></div>
+    <div class="lbl">Byggeplads / projekt</div>
+    <input id="proj" placeholder="Fx adresse eller sagsnr.">
+  </div>
+  <div class="printonly"><h2 id="ptitle"></h2></div>
+  <div class="tabs" id="tabs"></div>
+  <div id="main"></div>
+  <div class="card noprint">
+    <h2>Data</h2>
+    <p class="mut">Alt gemmes automatisk på denne telefon, også billederne. Tag en backup jævnligt (fx til Filer eller som mail til dig selv).</p>
+    <div class="row">
+      <button class="btn" onclick="exportCSV()">Eksportér CSV (Excel)</button>
+      <button class="btn" onclick="printAll()">Udskriv / gem PDF</button>
+      <button class="btn" onclick="backup()">Gem backup</button>
+      <label class="btn addph">Indlæs backup<input type="file" accept=".json,application/json" onchange="restore(event)"></label>
+    </div>
+    <p class="mut" id="stor"></p>
+  </div>
+</div>
+<div id="dlg" onclick="if(event.target===this)closeDlg()"><div class="sheet" id="sheet"></div></div>
+<div id="viewer" onclick="if(event.target===this||event.target.classList.contains('img'))closeViewer()">
+  <div class="bar"><span id="vcap"></span><button class="btn" onclick="closeViewer()">Luk</button></div>
+  <div class="img"><img id="vimg" alt=""></div>
+  <div class="bar"><button class="btn" id="vprev" onclick="stepViewer(-1)">‹ Forrige</button><button class="btn d" onclick="delPhoto()">Slet billede</button><button class="btn" id="vnext" onclick="stepViewer(1)">Næste ›</button></div>
+</div>
+<div id="toast"></div>
+<script>
+/* ===== Konstanter ===== */
+const STUE_PREFIX="st";                       // præfiks for stuelejligheder ved 4–6 boliger: st.1, st.2 …
+const UNITS_23={2:["tv.","th."],3:["tv.","mf.","th."]};
+const TAGCAT=["Solceller","Røgopluk","Gennemføring","Andet"];
+const KEY3="daasetjek_v3",KEY1="daasetjek_v1";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",2500)}
+function now(){const d=new Date();return d.toLocaleDateString("da-DK")+" "+d.toLocaleTimeString("da-DK",{hour:"2-digit",minute:"2-digit"})}
+
+/* ===== Data og migrering ===== */
+function newOg(name){return {id:"og"+uid(),name:name||"Opgang 1",units:2,top:3,kaelder:false}}
+function migrate(old){ // v1/v2: {proj,boxes:[{loc:"Stue|Bolig TV",...}]}
+  const og={id:"og1",name:"Opgang 1",units:2,top:3,kaelder:false};
+  const FL=["Stue","1. sal","2. sal","3. sal"],UN={"Bolig TV":"1","Bolig TH":"2","Opgang":"OG"};
+  const boxes=(old.boxes||[]).map(b=>{const[f,u]=String(b.loc||"").split("|");const i=FL.indexOf(f);const n={...b,og:og.id,fl:String(i<0?0:i),un:UN[u]||"OG"};delete n.loc;return n});
+  return {v:3,proj:old.proj||"",ogs:[og],boxes,tag:[],cur:og.id,view:"oversigt",uf:""}}
+function fix(s){s.v=3;s.ogs=Array.isArray(s.ogs)&&s.ogs.length?s.ogs:[newOg()];s.boxes=s.boxes||[];s.tag=s.tag||[];if(!s.ogs.find(o=>o.id===s.cur))s.cur=s.ogs[0].id;s.view=s.view||"oversigt";return s}
+let S;
+(function(){let r=null;try{r=JSON.parse(localStorage.getItem(KEY3)||"null")}catch(e){}
+  if(!r){let o=null;try{o=JSON.parse(localStorage.getItem(KEY1)||"null")}catch(e){}  // gammel nøgle bevares urørt som sikkerhed
+    r=o&&Array.isArray(o.boxes)?migrate(o):null;if(r)setTimeout(()=>toast("Data flyttet til 'Opgang 1'"),600)}
+  S=fix(r||{proj:""});localStorage.setItem(KEY3,JSON.stringify(S))})();
+function save(){try{localStorage.setItem(KEY3,JSON.stringify(S))}catch(e){toast("Kunne ikke gemme: "+e.message)}}
+
+/* ===== Navne ===== */
+const og=()=>S.ogs.find(o=>o.id===S.cur);
+const ogById=id=>S.ogs.find(o=>o.id===id);
+function flName(f){return f==="K"?"Kælder":f==="0"?"Stue":f+". sal"}
+function floorsOf(o){const l=o.kaelder?["K"]:[];for(let i=0;i<=o.top;i++)l.push(String(i));return l}
+function unitsOf(o,f){if(f==="K")return["OG"];const l=[];for(let i=1;i<=o.units;i++)l.push(String(i));l.push("OG");return l}
+function unName(o,f,u){if(u==="OG")return f==="K"?"Kælder/opgang":"Opgang";const i=+u;if(o.units<=3)return (UNITS_23[o.units]||[])[i-1]||("bolig "+i);return (f==="0"?STUE_PREFIX:f)+"."+i}
+function colName(o,u){if(u==="OG")return"Opgang";return o.units<=3?(UNITS_23[o.units]||[])[+u-1]||u:"Bolig "+u}
+function hidden(b,o){o=o||ogById(b.og);if(!o)return true;if(b.fl==="K")return !o.kaelder||b.un!=="OG";if(+b.fl>o.top)return true;return b.un!=="OG"&&+b.un>o.units}
+function where(b){const o=ogById(b.og);return (o?o.name:"?")+" · "+flName(b.fl)+" · "+(o?unName(o,b.fl,b.un):b.un)}
+
+/* ===== Status ===== */
+function stat(b){if(b.plac==="forkert"||b.ror==="afvigelse")return["bad","Afvigelse"];if(b.plac==="ok"&&b.ror==="ok")return["ok","Godkendt"];if(b.plac||b.ror)return["w","Delvist"];return["","Ikke tjekket"]}
+function tstat(t){return t.status==="afvigelse"?["bad","Afvigelse"]:t.status==="ok"?["ok","OK"]:t.status==="note"?["w","Note"]:["","Ikke vurderet"]}
+function counts(list){let c={n:list.length,ok:0,bad:0,open:0};list.forEach(b=>{const s=stat(b)[0];if(s==="ok")c.ok++;else if(s==="bad")c.bad++;else c.open++});return c}
+
+/* ===== Billeder i IndexedDB (nøgle = dåse- eller tag-id) ===== */
+const DBN="daasetjek_photos",ST="photos";let DB=null;let P={};const URLS={};
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DBN,1);r.onupgradeneeded=()=>{const s=r.result.createObjectStore(ST,{keyPath:"id"});s.createIndex("boxId","boxId")};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function tx(mode,fn){return new Promise((res,rej)=>{const t=DB.transaction(ST,mode);const s=t.objectStore(ST);let out;const r=fn(s);if(r)r.onsuccess=()=>out=r.result;t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)})}
+async function loadPhotos(){const all=await tx("readonly",s=>s.getAll());P={};(all||[]).sort((a,b)=>a.t-b.t).forEach(p=>{(P[p.boxId]=P[p.boxId]||[]).push(p)})}
+function pcount(id){return (P[id]||[]).length}
+function purl(p){return URLS[p.id]||(URLS[p.id]=URL.createObjectURL(p.blob))}
+function compress(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file);const img=new Image();img.onload=()=>{const M=1600;let w=img.naturalWidth,h=img.naturalHeight;const k=Math.min(1,M/Math.max(w,h));w=Math.round(w*k);h=Math.round(h*k);const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(new Error("Kunne ikke komprimere")),"image/jpeg",0.75)};img.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("Ukendt billedformat"))};img.src=u})}
+function item(id){return S.boxes.find(b=>b.id===id)||S.tag.find(t=>t.id===id)}
+async function addPhotos(id,input){const files=[...input.files];input.value="";if(!files.length)return;const card=$("b_"+id);card&&card.classList.add("busy");let n=0;
+  for(const f of files){try{const blob=await compress(f);const p={id:uid(),boxId:id,t:Date.now(),blob};await tx("readwrite",s=>s.put(p));(P[id]=P[id]||[]).push(p);n++}catch(e){alert("Billedet kunne ikke gemmes: "+e.message)}}
+  const b=item(id);if(b){b.tid=now();save()}render();if(n)toast(n===1?"Billede gemt":n+" billeder gemt");updStorage()}
+async function deletePhotosOf(id){for(const p of (P[id]||[])){await tx("readwrite",s=>s.delete(p.id));if(URLS[p.id]){URL.revokeObjectURL(URLS[p.id]);delete URLS[p.id]}}delete P[id]}
+let V={box:null,i:0};
+function openViewer(id,i){V={box:id,i};showViewer();$("viewer").classList.add("on")}
+function showViewer(){const l=P[V.box]||[];if(!l.length){closeViewer();return}V.i=(V.i+l.length)%l.length;$("vimg").src=purl(l[V.i]);const b=S.boxes.find(x=>x.id===V.box),t=S.tag.find(x=>x.id===V.box);$("vcap").textContent=(b?"Dåse "+b.nr+" · ":t?(t.title||t.cat)+" · ":"")+"Billede "+(V.i+1)+" af "+l.length;$("vprev").style.visibility=$("vnext").style.visibility=l.length>1?"visible":"hidden"}
+function stepViewer(d){V.i+=d;showViewer()}
+function closeViewer(){$("viewer").classList.remove("on");$("vimg").removeAttribute("src")}
+async function delPhoto(){const l=P[V.box]||[];const p=l[V.i];if(!p||!confirm("Slet dette billede?"))return;await tx("readwrite",s=>s.delete(p.id));l.splice(V.i,1);if(URLS[p.id]){URL.revokeObjectURL(URLS[p.id]);delete URLS[p.id]}if(!l.length){delete P[V.box];closeViewer()}else showViewer();render();updStorage()}
+function photoBlock(id){const l=P[id]||[];return `<div class="lbl">Billeder${l.length?" ("+l.length+")":""}</div>`+(l.length?`<div class="thumbs">${l.map((p,i)=>`<img src="${purl(p)}" alt="Billede ${i+1}" onclick="openViewer('${id}',${i})">`).join("")}</div>`:"")}
+function addPhotoBtn(id){return `<label class="btn p addph">📷 Tilføj billede<input type="file" accept="image/*" multiple onchange="addPhotos('${id}',this)"></label>`}
+
+/* ===== Visning ===== */
+$("proj").value=S.proj||"";$("proj").oninput=e=>{S.proj=e.target.value;save()};
+function ogSel(){const o=og();$("ogsel").innerHTML=S.ogs.map(x=>`<option value="${x.id}"${x.id===S.cur?" selected":""}>${esc(x.name)}</option>`).join("");
+  $("ogsub").textContent=`${o.units} boliger pr. etage · ${o.kaelder?"kælder + ":""}stue til ${o.top?o.top+". sal":"stue"}`}
+function pickOg(id){S.cur=id;S.view="oversigt";S.uf="";save();render();scrollTo(0,0)}
+function tabs(){const o=og();let h=`<button class="${S.view==="oversigt"?"on":""}" onclick="go('oversigt')">Oversigt</button>`;
+  floorsOf(o).forEach(f=>h+=`<button class="${S.view==="f:"+f?"on":""}" onclick="go('f:${f}')">${flName(f)}</button>`);
+  const tn=S.tag.filter(t=>t.og===o.id).length;h+=`<button class="${S.view==="tag"?"on":""}" onclick="go('tag')">Tag${tn?" ("+tn+")":""}</button>`;
+  const nb=S.boxes.filter(b=>stat(b)[0]==="bad").length+S.tag.filter(t=>t.status==="afvigelse").length;
+  h+=`<button class="${S.view==="afvig"?"on":""}" onclick="go('afvig')">Afvigelser${nb?" ("+nb+")":""}</button>`;$("tabs").innerHTML=h}
+function go(v,uf){S.view=v;S.uf=uf||"";save();render();scrollTo(0,0)}
+function boxHTML(b,ctx){const [c,t]=stat(b);const pc=pcount(b.id);return `<div class="card" id="b_${b.id}">
+${ctx?`<div class="mut" style="margin-bottom:4px">${esc(ctx)}</div>`:""}<div class="row" style="justify-content:space-between"><b>Dåse ${esc(b.nr)}${b.rum?` <span class="mut">· ${esc(b.rum)}</span>`:""}</b><span class="row" style="gap:6px">${pc?`<span class="pill">📷 ${pc}</span>`:""}<span class="pill ${c}">${t}</span></span></div>
+<div class="row noprint" style="margin-top:8px"><input value="${esc(b.nr)}" placeholder="Nr./ID" style="flex:1;min-width:90px" oninput="upd('${b.id}','nr',this.value)"><input value="${esc(b.rum)}" placeholder="Rum (fx køkken, stue)" style="flex:2;min-width:140px" oninput="upd('${b.id}','rum',this.value)"></div>
+<div class="lbl">1) Sidder dåsen på den rigtige placering?</div>
+<div class="seg"><button class="${b.plac==="ok"?"ok":""}" onclick="set('${b.id}','plac','ok')">Ja, korrekt</button><button class="${b.plac==="forkert"?"bad":""}" onclick="set('${b.id}','plac','forkert')">Nej, forkert</button><button class="z noprint" onclick="set('${b.id}','plac','')">Nulstil</button></div>
+<div class="lbl">2) Rør og udførelse</div>
+<div class="seg"><button class="${b.ror==="ok"?"ok":""}" onclick="set('${b.id}','ror','ok')">OK</button><button class="${b.ror==="afvigelse"?"bad":""}" onclick="set('${b.id}','ror','afvigelse')">Afvigelse</button><button class="z noprint" onclick="set('${b.id}','ror','')">Nulstil</button></div>
+<div class="lbl">Note: kommentar til rørene og udførelsen</div>
+<textarea placeholder="Fx rør knækket, mangler tilslutning, for lidt dækning…" oninput="upd('${b.id}','kom',this.value)">${esc(b.kom)}</textarea>
+${photoBlock(b.id)}
+<div class="row noprint" style="justify-content:space-between;margin-top:10px">${addPhotoBtn(b.id)}<button class="btn d" onclick="del('${b.id}')">Slet dåse</button></div>
+<div class="mut" style="margin-top:6px">${b.tid?"Senest ændret "+esc(b.tid):""}</div></div>`}
+function tagHTML(t,ctx){const [c,s]=tstat(t);const pc=pcount(t.id);return `<div class="card" id="b_${t.id}">
+${ctx?`<div class="mut" style="margin-bottom:4px">${esc(ctx)}</div>`:""}<div class="row" style="justify-content:space-between"><b>${esc(t.cat)}${t.title?` <span class="mut">· ${esc(t.title)}</span>`:""}</b><span class="row" style="gap:6px">${pc?`<span class="pill">📷 ${pc}</span>`:""}<span class="pill ${c}">${s}</span></span></div>
+<div class="lbl noprint">Kategori</div>
+<div class="seg noprint">${TAGCAT.map(k=>`<button class="${t.cat===k?"ok":""}" style="${t.cat===k?"background:var(--ink);border-color:var(--ink)":""}" onclick="tset('${t.id}','cat','${k}')">${k}</button>`).join("")}</div>
+<div class="lbl noprint">Titel / placering</div>
+<input class="noprint" value="${esc(t.title)}" placeholder="Fx røglem ved trappe, solcellefelt syd" oninput="tupd('${t.id}','title',this.value)">
+<div class="lbl">Status</div>
+<div class="seg"><button class="${t.status==="ok"?"ok":""}" onclick="tset('${t.id}','status','ok')">OK</button><button class="${t.status==="afvigelse"?"bad":""}" onclick="tset('${t.id}','status','afvigelse')">Afvigelse</button><button style="${t.status==="note"?"background:#fef3c7;border-color:#f59e0b":""}" onclick="tset('${t.id}','status','note')">Note</button></div>
+<div class="lbl">Note</div>
+<textarea placeholder="Fx gennemføring for solcellekabel mangler tætning…" oninput="tupd('${t.id}','kom',this.value)">${esc(t.kom)}</textarea>
+${photoBlock(t.id)}
+<div class="row noprint" style="justify-content:space-between;margin-top:10px">${addPhotoBtn(t.id)}<button class="btn d" onclick="tdel('${t.id}')">Slet punkt</button></div>
+<div class="mut" style="margin-top:6px">${t.tid?"Senest ændret "+esc(t.tid):""}</div></div>`}
+function unitHead(o,f,u,l){const c=counts(l);return `<div class="card" style="background:#eef2ff" id="u_${f}_${u}"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${flName(f)} · ${unName(o,f,u)}</h2><span class="mut">${c.ok}/${c.n} godkendt${c.bad?" · "+c.bad+" afv.":""}</span></div><div class="row noprint" style="margin-top:8px"><button class="btn p" onclick="add('${f}','${u}')">+ Tilføj dåse</button></div></div>`}
+function floorHTML(o,f,uf,print){let h="";const us=unitsOf(o,f);
+  if(!print&&us.length>1)h+=`<div class="chips noprint"><button class="${!uf?"on":""}" onclick="S.uf='';save();render()">Alle</button>${us.map(u=>`<button class="${uf===u?"on":""}" onclick="S.uf='${u}';save();render()">${unName(o,f,u)}</button>`).join("")}</div>`;
+  us.forEach(u=>{if(uf&&uf!==u)return;const l=S.boxes.filter(b=>b.og===o.id&&b.fl===f&&b.un===u);if(print&&!l.length)return;h+=unitHead(o,f,u,l);l.forEach(b=>h+=boxHTML(b))});return h}
+function tagView(o,print){const l=S.tag.filter(t=>t.og===o.id);let h="";
+  if(!print)h+=`<div class="card" style="background:#eef2ff"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Tag · ${esc(o.name)}</h2><span class="mut">${l.length} punkter</span></div><p class="mut" style="margin:6px 0">Noter og afvigelser der ikke hører til en dåse, fx solceller, røgopluk og gennemføringer.</p><button class="btn p" onclick="tadd()">+ Nyt punkt på taget</button></div>`;
+  l.forEach(t=>h+=tagHTML(t));return h}
+function overview(o){let h="";
+  if(S.ogs.length>1){h+=`<div class="card"><h2>Alle opgange</h2><div class="tblw"><table><tr><th>Opgang</th><th>Dåser</th><th>Godk.</th><th>Afv.</th><th>Tag afv.</th></tr>${S.ogs.map(x=>{const c=counts(S.boxes.filter(b=>b.og===x.id));const ta=S.tag.filter(t=>t.og===x.id&&t.status==="afvigelse").length;return `<tr><td><a href="#" onclick="pickOg('${x.id}');return false">${esc(x.name)}</a></td><td>${c.n}</td><td>${c.ok}</td><td>${c.bad?`<b style="color:var(--bad)">${c.bad}</b>`:0}</td><td>${ta?`<b style="color:var(--bad)">${ta}</b>`:0}</td></tr>`}).join("")}</table></div></div>`}
+  const mine=S.boxes.filter(b=>b.og===o.id);const all=counts(mine);const np=mine.reduce((a,b)=>a+pcount(b.id),0);
+  const cols=[];for(let i=1;i<=o.units;i++)cols.push(String(i));cols.push("OG");
+  const fl=floorsOf(o).slice().reverse();const tl=S.tag.filter(t=>t.og===o.id);const ta=tl.filter(t=>t.status==="afvigelse").length;
+  h+=`<div class="card"><h2>${esc(o.name)}</h2><p>${all.n} dåser · <span class="pill ok">${all.ok} godkendt</span> <span class="pill bad">${all.bad} afvigelser</span> <span class="pill">${all.open} åbne</span> <span class="pill">📷 ${np}</span></p>
+<div class="tblw"><table class="ov"><tr><th>Etage</th>${cols.map(u=>`<th>${colName(o,u)}</th>`).join("")}</tr>
+<tr><td><a href="#" onclick="go('tag');return false">Tag</a></td><td colspan="${cols.length}" class="c" style="text-align:left" onclick="go('tag')">${tl.length?`${tl.length} punkter${ta?` · <b>${ta} afv.</b>`:""}`:'<span class="mut">–</span>'}</td></tr>
+${fl.map(f=>`<tr><td><a href="#" onclick="go('f:${f}');return false">${flName(f)}</a></td>${cols.map(u=>{if(f==="K"&&u!=="OG")return `<td class="mut">·</td>`;const c=counts(mine.filter(b=>b.fl===f&&b.un===u));return `<td class="c" onclick="go('f:${f}','${u}')">${c.n?`${c.ok}/${c.n}${c.bad?` <b>${c.bad}!</b>`:""}`:'<span class="mut">–</span>'}</td>`}).join("")}</tr>`).join("")}</table></div>
+<p class="mut">Tal = godkendte/registrerede dåser, rød = afvigelser. Tryk på et felt for at åbne boligen.${o.units>3?` Boligerne hedder fx 1.1, 1.2 på 1. sal og ${STUE_PREFIX}.1 i stuen.`:""}</p></div>`;
+  const hid=mine.filter(b=>hidden(b,o));
+  if(hid.length){h+=`<div class="sec">Skjulte dåser (${hid.length}) – ligger uden for opgangens nuværende opsætning</div><p class="mut">De er ikke slettet. Ret opsætningen under ⚙︎ for at få dem tilbage på plads, eller slet dem her.</p>`;hid.forEach(b=>h+=boxHTML(b,flName(b.fl)+" · "+(b.un==="OG"?"Opgang":"bolig nr. "+b.un)))}
+  return h}
+let PRINTALL=false;
+function render(){ogSel();tabs();const o=og();let h="";$("ptitle").textContent="Dåsetjek"+(S.proj?" – "+S.proj:"")+" · udskrevet "+now();
+  if(PRINTALL){S.ogs.forEach(x=>{h+=`<h2 style="margin-top:18px">${esc(x.name)}</h2>`;floorsOf(x).forEach(f=>h+=floorHTML(x,f,"",true));const hid=S.boxes.filter(b=>b.og===x.id&&hidden(b,x));hid.forEach(b=>h+=boxHTML(b,"Skjult: "+flName(b.fl)+" · bolig "+b.un));const tl=S.tag.filter(t=>t.og===x.id);if(tl.length){h+=`<div class="sec">Tag</div>`;tl.forEach(t=>h+=tagHTML(t))}})}
+  else if(S.view==="oversigt")h+=overview(o);
+  else if(S.view==="tag")h+=tagView(o);
+  else if(S.view==="afvig"){const bl=S.boxes.filter(b=>stat(b)[0]==="bad"),tl=S.tag.filter(t=>t.status==="afvigelse");h+=`<h2>Afvigelser – alle opgange (${bl.length+tl.length})</h2>`;
+    S.ogs.forEach(x=>{const b2=bl.filter(b=>b.og===x.id),t2=tl.filter(t=>t.og===x.id);if(!b2.length&&!t2.length)return;h+=`<div class="sec">${esc(x.name)}</div>`;
+      b2.forEach(b=>{const pc=pcount(b.id);h+=boxHTML(b,flName(b.fl)+" · "+unName(x,b.fl,b.un)+(b.rum?" · "+b.rum:"")+(pc?" · 📷 "+pc:" · ingen billeder"))});
+      t2.forEach(t=>{const pc=pcount(t.id);h+=tagHTML(t,"Tag · "+t.cat+(pc?" · 📷 "+pc:" · ingen billeder"))})});
+    if(!bl.length&&!tl.length)h+=`<p class="mut">Ingen afvigelser registreret.</p>`}
+  else if(S.view.startsWith("f:")){const f=S.view.slice(2);if(floorsOf(o).includes(f))h+=floorHTML(o,f,S.uf);else{S.view="oversigt";return render()}}
+  $("main").innerHTML=h}
+function add(f,u){const n=S.boxes.filter(b=>b.og===S.cur&&b.fl===f&&b.un===u).length+1;const b={id:uid(),og:S.cur,fl:f,un:u,nr:String(n),rum:"",plac:"",ror:"",kom:"",tid:now()};S.boxes.push(b);save();render();setTimeout(()=>{const e=$("b_"+b.id);e&&e.scrollIntoView({behavior:"smooth"})},50)}
+function upd(id,k,v){const b=item(id);if(!b)return;b[k]=v;b.tid=now();save()}
+function set(id,k,v){upd(id,k,v);render()}
+async function del(id){const pc=pcount(id);if(confirm("Slet denne dåse"+(pc?" og dens "+pc+(pc===1?" billede":" billeder"):"")+"?")){S.boxes=S.boxes.filter(b=>b.id!==id);save();try{await deletePhotosOf(id)}catch(e){}render();updStorage()}}
+function tadd(){const t={id:uid(),og:S.cur,cat:"Solceller",title:"",status:"",kom:"",tid:now()};S.tag.push(t);save();render();setTimeout(()=>{const e=$("b_"+t.id);e&&e.scrollIntoView({behavior:"smooth"})},50)}
+const tupd=upd,tset=set;
+async function tdel(id){const pc=pcount(id);if(confirm("Slet dette punkt"+(pc?" og "+pc+(pc===1?" billede":" billeder"):"")+"?")){S.tag=S.tag.filter(t=>t.id!==id);save();try{await deletePhotosOf(id)}catch(e){}render();updStorage()}}
+function printAll(){PRINTALL=true;render();setTimeout(()=>{window.print();PRINTALL=false;render()},300)}
+
+/* ===== Opgang: ny / redigér ===== */
+let D=null;
+function ogDialog(id){const o=id?ogById(id):null;D=o?{...o,isNew:false}:{...newOg("Opgang "+String.fromCharCode(64+Math.min(26,S.ogs.length+1))),isNew:true};drawDlg();$("dlg").classList.add("on")}
+function drawDlg(){const fl=[];for(let i=0;i<=5;i++)fl.push(i);
+  $("sheet").innerHTML=`<h2>${D.isNew?"Ny opgang":"Opsætning af opgang"}</h2>
+<div class="lbl">Navn (fx Opgang A eller adresse)</div><input id="dname" value="${esc(D.name)}" oninput="D.name=this.value">
+<div class="lbl">Boliger pr. etage</div><div class="seg">${[2,3,4,5,6].map(n=>`<button class="${D.units===n?"ok":""}" onclick="D.units=${n};drawDlg()">${n}</button>`).join("")}</div>
+<div class="mut" style="margin-top:4px">Navne: ${D.units<=3?UNITS_23[D.units].join(", "):`${STUE_PREFIX}.1–${STUE_PREFIX}.${D.units} i stuen, 1.1–1.${D.units} på 1. sal osv.`} + Opgang</div>
+<div class="lbl">Øverste etage</div><div class="seg">${fl.map(i=>`<button class="${D.top===i?"ok":""}" onclick="D.top=${i};drawDlg()">${i?i+".":"Stue"}</button>`).join("")}</div>
+<div class="lbl">Kælder i opgangen?</div><div class="seg"><button class="${D.kaelder?"ok":""}" onclick="D.kaelder=true;drawDlg()">Ja</button><button class="${!D.kaelder?"ok":""}" onclick="D.kaelder=false;drawDlg()">Nej</button></div>
+<div class="row" style="margin-top:16px;justify-content:space-between"><button class="btn" onclick="closeDlg()">Annullér</button><button class="btn p" onclick="saveDlg()">Gem</button></div>
+${!D.isNew&&S.ogs.length>1?`<div style="margin-top:18px"><button class="btn d" onclick="delOg()">Slet opgang…</button></div>`:""}`}
+function closeDlg(){$("dlg").classList.remove("on");D=null}
+function saveDlg(){const name=(D.name||"").trim()||"Opgang";const cfg={id:D.id,name,units:D.units,top:D.top,kaelder:D.kaelder};
+  if(D.isNew){S.ogs.push(cfg);S.cur=cfg.id;S.view="oversigt";save();closeDlg();render();toast("Opgang oprettet");return}
+  const o=ogById(D.id);const mine=S.boxes.filter(b=>b.og===o.id);
+  const newly=mine.filter(b=>!hidden(b,o)&&hidden(b,cfg)).length;
+  if(newly&&!confirm(newly+" dåse(r) ligger på boliger/etager, som ikke findes i den nye opsætning.\n\nDe bliver IKKE slettet, men vises under 'Skjulte dåser' i oversigten, indtil du ændrer opsætningen tilbage.\n\nFortsæt?"))return;
+  const dw=mine.filter(b=>b.un!=="OG"&&!hidden(b,cfg)).length;
+  if(o.units!==cfg.units&&dw&&!confirm("Antal boliger ændres fra "+o.units+" til "+cfg.units+". Dåserne bliver på bolig nr. 1, 2, 3 … og får de nye navne (fx bliver bolig 2 '"+unName(cfg,"1","2")+"'). Fortsæt?"))return;
+  Object.assign(o,cfg);save();closeDlg();render();toast("Opsætning gemt")}
+async function delOg(){const o=ogById(D.id);const b=S.boxes.filter(x=>x.og===o.id),t=S.tag.filter(x=>x.og===o.id);
+  if(!confirm("Slet '"+o.name+"' med "+b.length+" dåser og "+t.length+" tag-punkter, inkl. billeder? Det kan ikke fortrydes."))return;
+  for(const x of [...b,...t]){try{await deletePhotosOf(x.id)}catch(e){}}
+  S.boxes=S.boxes.filter(x=>x.og!==o.id);S.tag=S.tag.filter(x=>x.og!==o.id);S.ogs=S.ogs.filter(x=>x.id!==o.id);S.cur=S.ogs[0].id;S.view="oversigt";save();closeDlg();render();updStorage()}
+
+/* ===== Eksport / backup ===== */
+function dl(name,data,type){const a=document.createElement("a");a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
+function stamp(){const d=new Date(),z=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())}
+function exportCSV(){const q=s=>'"'+String(s==null?"":s).replace(/"/g,'""')+'"';let r=[["Projekt","Opgang","Etage","Lokation","Dåse/punkt","Rum/placering","Placering","Rør","Kommentar","Status","Antal billeder","Senest ændret"].join(";")];
+  S.ogs.forEach(o=>{S.boxes.filter(b=>b.og===o.id).forEach(b=>{r.push([S.proj,o.name,flName(b.fl),(hidden(b,o)?"(skjult) ":"")+unName(o,b.fl,b.un),b.nr,b.rum,b.plac==="ok"?"Korrekt":b.plac==="forkert"?"Forkert":"",b.ror==="ok"?"OK":b.ror==="afvigelse"?"Afvigelse":"",b.kom,stat(b)[1],pcount(b.id),b.tid].map(q).join(";"))});
+    S.tag.filter(t=>t.og===o.id).forEach(t=>r.push([S.proj,o.name,"Tag",t.cat,t.title,"","","",t.kom,tstat(t)[1],pcount(t.id),t.tid].map(q).join(";")))});
+  dl("daasetjek-"+stamp()+".csv","\ufeff"+r.join("\r\n"),"text/csv")}
+function b64(blob){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>rej(fr.error);fr.readAsDataURL(blob)})}
+async function backup(){const list=Object.values(P).flat();const size=list.reduce((a,p)=>a+p.blob.size,0);
+  if(list.length&&!confirm("Backup med "+list.length+" billeder fylder ca. "+(size*1.37/1048576).toFixed(1)+" MB. Fortsæt?"))return;
+  toast("Laver backup…");const photos=[];for(const p of list)photos.push({id:p.id,boxId:p.boxId,t:p.t,data:await b64(p.blob)});
+  dl("daasetjek-backup-"+stamp()+".json",JSON.stringify({app:"daasetjek",version:3,saved:new Date().toISOString(),...S,photos}),"application/json")}
+function fromDataURL(u){const [h,d]=u.split(",");const mime=(h.match(/data:([^;]+)/)||[])[1]||"image/jpeg";const bin=atob(d);const a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:mime})}
+function restore(e){const f=e.target.files[0];e.target.value="";if(!f)return;const fr=new FileReader();fr.onload=async()=>{let d;try{d=JSON.parse(fr.result)}catch(x){alert("Kunne ikke læse filen");return}
+  if(!d||!Array.isArray(d.boxes)){alert("Filen er ikke en Dåsetjek-backup");return}
+  const photos=d.photos||[];
+  if(!confirm("Indlæs backup med "+d.boxes.length+" dåser"+(d.tag?" og "+d.tag.length+" tag-punkter":"")+(photos.length?" og "+photos.length+" billeder":"")+"? Det erstatter alt på denne telefon."))return;
+  delete d.photos;delete d.app;delete d.version;delete d.saved;
+  S=Array.isArray(d.ogs)?fix(d):migrate(d);save();
+  try{Object.values(URLS).forEach(u=>URL.revokeObjectURL(u));for(const k in URLS)delete URLS[k];await tx("readwrite",s=>s.clear());
+    for(const p of photos){await tx("readwrite",s=>s.put({id:p.id,boxId:p.boxId,t:p.t||Date.now(),blob:fromDataURL(p.data)}))}
+    await loadPhotos()}catch(x){alert("Billederne kunne ikke indlæses: "+x.message)}
+  $("proj").value=S.proj;render();updStorage();alert("Backup indlæst")};fr.readAsText(f)}
+async function updStorage(){try{if(navigator.storage&&navigator.storage.estimate){const e=await navigator.storage.estimate();const p=navigator.storage.persisted?await navigator.storage.persisted():false;$("stor").textContent="Brugt plads: "+(e.usage/1048576).toFixed(1)+" MB"+(p?" · lager beskyttet mod automatisk sletning":"")+" · version 3"}}catch(x){}}
+
+/* ===== Start + opdatering ===== */
+(async()=>{render();
+  try{DB=await openDB();await loadPhotos()}catch(e){toast("Billeder er ikke tilgængelige i denne browser")}
+  render();
+  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
+  updStorage();
+  if("serviceWorker" in navigator&&location.protocol==="https:"){
+    const had=!!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had)$("upd").classList.add("on")});
+    navigator.serviceWorker.register("sw.js").then(r=>{r.update().catch(()=>{});document.addEventListener("visibilitychange",()=>{if(!document.hidden)r.update().catch(()=>{})})}).catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
