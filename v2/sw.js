@@ -1,7 +1,7 @@
 // Dåsetjek 2 service worker (scope /daasetjek/v2/). Rører ikke Dåsetjek 1's cache.
 // App-filer: netværk først, cache som reserve (opdaterer automatisk, virker offline).
 // Tegninger + PDF.js: cache først (store filer, hentes kun én gang). Ved nye tegninger: skift TG-navnet.
-const APP = "daasetjek2-app-v1";
+const APP = "daasetjek2-app-v3";
 const TG = "daasetjek2-tegninger-v1";
 const OWN = [APP, TG];
 const CORE = ["./", "./index.html", "./manifest.json", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png"];
