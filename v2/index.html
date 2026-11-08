@@ -97,33 +97,31 @@ h2{font-size:17px;margin:4px 0 8px}
 .typ button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 .ub{border:1px solid var(--line);background:#fff;border-radius:16px;padding:7px 10px;margin:3px 4px 3px 0;font-size:15px;color:var(--ink);min-height:38px}
 .ova td{vertical-align:middle}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:8px 0}
+.big{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;width:100%;border:1px solid var(--line);background:#fff;border-radius:14px;padding:14px 16px;min-height:64px;font-size:18px;font-weight:600;color:var(--ink);text-align:left;cursor:pointer;font-family:inherit}
+.big small{font-size:13px;font-weight:400;color:var(--mut);margin-top:3px;line-height:1.3}
+.big:active{background:#e8edf6}
+.big .badge{position:absolute;top:-7px;right:-7px;background:var(--bad);color:#fff;border-radius:14px;min-width:28px;height:28px;padding:0 8px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+.big .okn{color:var(--ok);font-weight:600}
+.big .badn{color:var(--bad);font-weight:700}
+.back{border:none;background:none;color:var(--acc);font-size:17px;padding:8px 0;min-height:44px;font-weight:600;cursor:pointer;font-family:inherit}
+.hbar{display:flex;align-items:center;gap:8px}
+.hbar h1{flex:1;font-size:18px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar .btn{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.25);padding:8px 12px;min-height:40px;font-size:15px}
+.rum{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+.rum button{border:1px solid var(--line);background:#fff;padding:8px 12px;min-height:40px;border-radius:18px;font-size:14px;color:var(--ink);font-family:inherit}
+.rum button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 .sec{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);margin:16px 0 4px}
 </style>
 </head>
 <body>
 <div id="upd"><span>Ny version af SP2 Dåsekontrol</span><button onclick="location.reload()">Genindlæs</button></div>
-<header><h1>SP2 Dåsekontrol</h1><small id="ogsub"></small></header>
+<header><div class="hbar"><button class="btn" id="hback" style="display:none" onclick="navBack()">‹ Tilbage</button><div style="flex:1;min-width:0"><h1 id="htitle">SP2 Dåsekontrol</h1><small id="ogsub"></small></div><button class="btn" onclick="menuDlg()">Menu</button></div></header>
 <div class="wrap">
-  <div class="card noprint">
-    <div class="lbl" style="margin-top:0">Opgang</div>
-    <div class="top"><select id="ogsel" onchange="pickOg(this.value)" aria-label="Vælg opgang"></select><button class="btn" onclick="ogDialog(S.cur)" aria-label="Opsætning">⚙︎</button><button class="btn p" onclick="ogDialog()" title="Opret egen opgang">+ Egen</button></div>
-    <div class="lbl">Byggeplads / projekt</div>
-    <input id="proj" placeholder="Fx adresse eller sagsnr.">
-  </div>
   <div class="printonly"><h2 id="ptitle"></h2></div>
-  <div class="tabs" id="tabs"></div>
   <div id="main"></div>
-  <div class="card noprint">
-    <h2>Data</h2>
-    <p class="mut">Alt gemmes automatisk på denne telefon, også billederne. Tag en backup jævnligt (fx til Filer eller som mail til dig selv). SP2 Dåsekontrol har sin egen hukommelse.</p>
-    <div class="row">
-      <button class="btn" onclick="exportCSV()">Eksportér CSV (Excel)</button>
-      <button class="btn" onclick="printAll()">Udskriv / gem PDF</button>
-      <button class="btn" onclick="backup()">Gem backup</button>
-      <label class="btn addph">Indlæs backup<input type="file" accept=".json,application/json" onchange="restore(event)"></label>
-    </div>
-    <p class="mut" id="stor"></p>
-  </div>
+  <input id="proj" type="hidden" value="">
+  <p class="mut noprint" id="stor" style="text-align:center;margin:18px 8px"></p>
 </div>
 <div id="dlg" onclick="if(event.target===this)closeDlg()"><div class="sheet" id="sheet"></div></div>
 <div id="viewer" onclick="if(event.target===this||event.target.classList.contains('img'))closeViewer()">
@@ -159,6 +157,7 @@ function migrate(old){ // v1/v2: {proj,boxes:[{loc:"Stue|Bolig TV",...}]}
   const boxes=(old.boxes||[]).map(b=>{const[f,u]=String(b.loc||"").split("|");const i=FL.indexOf(f);const n={...b,og:og.id,fl:String(i<0?0:i),un:UN[u]||"OG"};delete n.loc;return n});
   return {v:3,proj:old.proj||"",ogs:[og],boxes,tag:[],cur:og.id,view:"oversigt",uf:""}}
 const DTYPES=["Lampeudtag","Stikkontakt","Afbryder","Netværk","Andet"];
+const ROOMS=["Køkken/alrum","Stue","Soveværelse","Værelse","Bad","Entré","Gang","Bryggers","Altan/terrasse","Trapperum"];
 function migBox(b){ // gammel model (plac/ror/kom + fritekst nr) -> ny model (dåsetype + 2 afvigelser). Intet slettes: originalen gemmes i b.old
   if(b.m===2)return b;const nr=String(b.nr==null?"":b.nr).trim(),kom=String(b.kom||"");
   b.old={nr:b.nr,plac:b.plac,ror:b.ror,kom:b.kom};
@@ -167,7 +166,9 @@ function migBox(b){ // gammel model (plac/ror/kom + fritekst nr) -> ny model (d�
   const key=nr.toLowerCase().replace(/[.\s]+$/,"").replace("netvaerk","netværk");const t=DTYPES.find(x=>x.toLowerCase()===key);
   if(t){b.typ=t;b.typTxt="";b.nr=""}else if(!nr||/^\d+$/.test(nr)){b.typ="";b.typTxt=""}else{b.typ="Andet";b.typTxt=nr;b.nr=""}
   delete b.plac;delete b.ror;b.rum=b.rum||"";b.m=2;return b}
-function fix(s){s.v=5;s.ogs=Array.isArray(s.ogs)&&s.ogs.length?s.ogs:[newOg()];s.boxes=s.boxes||[];s.tag=s.tag||[];if(!s.ogs.find(o=>o.id===s.cur))s.cur=s.ogs[0].id;s.view=s.view||"oversigt";s.ogs.forEach(o=>{o.tgB=o.tgB||"";o.tgO=o.tgO||""});s.tg=s.tg&&typeof s.tg==="object"?s.tg:{};s.tg.names=s.tg.names||{};s.boxes.forEach(migBox);return s}
+function fix(s){s.v=5;s.ogs=Array.isArray(s.ogs)&&s.ogs.length?s.ogs:[newOg()];s.boxes=s.boxes||[];s.tag=s.tag||[];if(s.cur&&!s.ogs.find(o=>o.id===s.cur))s.cur=s.ogs[0]?s.ogs[0].id:"";
+  if(!s.view||s.view==="oversigt")s.view=s.cur?"floors":"home";
+  s.ogs.forEach(o=>{o.tgB=o.tgB||"";o.tgO=o.tgO||""});s.tg=s.tg&&typeof s.tg==="object"?s.tg:{};s.tg.names=s.tg.names||{};s.boxes.forEach(migBox);s.uf=s.uf||"";return s}
 let S;
 function readOld(){ // kopi af Dåsetjek 1's data (kun læsning)
   let o=null;try{o=JSON.parse(localStorage.getItem(OLDKEY3)||"null")}catch(e){}
@@ -198,7 +199,7 @@ function seedOgs(s){ // opretter opgange fra tegningerne efter faste id'er: kun 
     add.push({id,name:tgOL(b,x),auto:1,rk,tgB:b,tgO:x,kaelder:false,units:0,top:0})});
   s.seedIds=[...new Set(s.seedIds.concat(all.map(z=>z.id)))];s.seeded="tg2";
   if(add.length){s.ogs=s.ogs.concat(add);const auto=s.ogs.filter(o=>o.auto).sort((a,b)=>a.name.localeCompare(b.name,"da",{numeric:true}));s.ogs=auto.concat(s.ogs.filter(o=>!o.auto))}
-  if(!s.ogs.find(o=>o.id===s.cur))s.cur=(s.ogs.find(o=>o.id==="tg_F1-A")||s.ogs[0]).id}
+  if(!s.cur||!s.ogs.find(o=>o.id===s.cur)){s.cur="";s.view="home"}}
 function renameUnit(s){const r=tgBySide(s);if(!r)return;const v=prompt("Navn på boligen "+s+" (fx tv., th., mf., 1.2):",tgName(r.d)||"");if(v!=null)tgSetName(s,v)}
 function colName(o,u){if(u==="OG")return"Opgang";return o.units<=3?(UNITS_23[o.units]||[])[+u-1]||u:"Bolig "+u}
 function hidden(b,o){o=o||ogById(b.og);if(!o)return true;if(b.fl==="K")return !o.kaelder||b.un!=="OG";if(o.auto)return !floorsOf(o).includes(b.fl)||!unitsOf(o,b.fl).includes(b.un);if(+b.fl>o.top)return true;return b.un!=="OG"&&+b.un>o.units}
@@ -248,27 +249,102 @@ async function delPhoto(){const l=P[V.box]||[];const p=l[V.i];if(!p||!confirm("S
 function photoBlock(id){const l=P[id]||[];return `<div class="lbl">Billeder${l.length?" ("+l.length+")":""}</div>`+(l.length?`<div class="thumbs">${l.map((p,i)=>`<img src="${purl(p)}" alt="Billede ${i+1}" onclick="openViewer('${id}',${i})">`).join("")}</div>`:"")}
 function addPhotoBtn(id){return `<label class="btn p addph">📷 Tilføj billede<input type="file" accept="image/*" multiple onchange="addPhotos('${id}',this)"></label>`}
 
-/* ===== Visning ===== */
-$("proj").value=S.proj||"";$("proj").oninput=e=>{S.proj=e.target.value;save()};
-function ogSel(){const o=og();const opt=x=>`<option value="${x.id}"${x.id===S.cur?" selected":""}>${esc(x.name)}${x.rk?" (rækkehus)":x.auto&&TG[x.tgB]&&tgList(x.tgB,x.tgO).some(d=>d.f.length>1)?" (duplex)":""}</option>`;
-  const grp=[...new Set(S.ogs.filter(x=>x.auto).map(x=>x.tgB))].sort((a,b)=>a.localeCompare(b,"da",{numeric:true})).map(b=>`<optgroup label="Bygning ${b}">${S.ogs.filter(x=>x.auto&&x.tgB===b).map(opt).join("")}</optgroup>`).join("");
-  const own=S.ogs.filter(x=>!x.auto);$("ogsel").innerHTML=grp+(own.length?`<optgroup label="Egne opgange">${own.map(opt).join("")}</optgroup>`:"");
-  if(o.auto){const nb=floorsOf(o).reduce((a,f)=>a+unitsOf(o,f).filter(u=>u!=="OG").length,0);const fl=floorsOf(o).filter(f=>f!=="K");$("ogsub").textContent=`${nb} ${nb===1?"bolig":"boliger"} · ${o.kaelder?"kælder + ":""}${o.rk?"rækkehus st.–2. sal":flName(fl[0])+(fl.length>1?" til "+flName(fl[fl.length-1]):"")} · tegninger ${tgOL(o.tgB,o.tgO)}`;return}
-  $("ogsub").textContent=`${o.units} boliger pr. etage · ${o.kaelder?"kælder + ":""}stue til ${o.top?o.top+". sal":"stue"}${o.tgB?" · tegninger "+tgOL(o.tgB,o.tgO):""}`}
-function pickOg(id){S.cur=id;S.view="oversigt";S.uf="";save();render();scrollTo(0,0)}
-function tabs(){const o=og();let h=`<button class="${S.view==="oversigt"?"on":""}" onclick="go('oversigt')">Oversigt</button>`;
-  floorsOf(o).forEach(f=>h+=`<button class="${S.view==="f:"+f?"on":""}" onclick="go('f:${f}')">${flName(f)}</button>`);
-  const tn=S.tag.filter(t=>t.og===o.id).length;h+=`<button class="${S.view==="tag"?"on":""}" onclick="go('tag')">Tag${tn?" ("+tn+")":""}</button>`;
-  const nb=S.boxes.filter(b=>stat(b)[0]==="bad").length+S.tag.filter(t=>t.status==="afvigelse").length;
-  h+=`<button class="${S.view==="afvig"?"on":""}" onclick="go('afvig')">Afvigelser${nb?" ("+nb+")":""}</button>`;h+=`<button class="${S.view==="tegn"?"on":""}" onclick="goTegn()">📐 Tegninger</button>`;$("tabs").innerHTML=h}
+/* ===== Visning (El-planer-stil: knapper for bygning → opgang → etage → bolig) ===== */
+$("proj").value=S.proj||"";
+const badge=n=>n?`<span class="badge">${n}</span>`:"";
+function ogProg(o){const c=counts(S.boxes.filter(b=>b.og===o.id));const ta=S.tag.filter(t=>t.og===o.id&&t.status==="afvigelse").length;return{c,ta,afv:c.bad+ta}}
+function flProg(o,f){return counts(S.boxes.filter(b=>b.og===o.id&&b.fl===f))}
+function unProg(o,f,u){return counts(S.boxes.filter(b=>b.og===o.id&&b.fl===f&&b.un===u))}
+function progLine(c){if(!c.n)return "Ingen dåser endnu";return c.n+" "+(c.n===1?"dåse":"dåser")+(c.bad?` · <span class="badn">${c.bad} afv.</span>`:` · <span class="okn">alle OK</span>`)}
+function ogSubLine(o){if(!o)return "";if(o.auto){const nb=floorsOf(o).reduce((a,f)=>a+unitsOf(o,f).filter(u=>u!=="OG").length,0);const fl=floorsOf(o).filter(f=>f!=="K");return `${nb} ${nb===1?"bolig":"boliger"} · ${o.kaelder?"kælder + ":""}${o.rk?"rækkehus st.–2. sal":flName(fl[0])+(fl.length>1?" til "+flName(fl[fl.length-1]):"")}`}
+  return `${o.units} boliger pr. etage · ${o.kaelder?"kælder + ":""}stue til ${o.top?o.top+". sal":"stue"}`}
+function whereShort(o,f,u){return o.name+(f?` · ${f==="TAG"||f==="tag"?"Tag":flName(f)}`:"")+(u?` · ${unShort(o,f,u)}`:"")}
+function headBar(){const o=og();const back=$("hback"),ht=$("htitle"),sub=$("ogsub");
+  let showBack=false,title="SP2 Dåsekontrol",subtxt="";
+  if(S.view==="home"||!S.cur){title="SP2 Dåsekontrol";subtxt="Vælg opgang"}
+  else if(S.view==="tegn"){showBack=true;title="Tegninger";subtxt=o?o.name:""}
+  else if(S.view==="afvig"){showBack=true;title="Afvigelser";subtxt="Alle opgange"}
+  else if(S.view==="tag"){showBack=true;title=o.name+" · Tag";subtxt=ogSubLine(o)}
+  else if(S.view==="floors"){showBack=true;title=o.name;subtxt=ogSubLine(o)}
+  else if(S.view.startsWith("f:")){const f=S.view.slice(2);showBack=true;
+    if(S.uf){title=whereShort(o,f,S.uf);subtxt=progLine(unProg(o,f,S.uf)).replace(/<[^>]+>/g,"")}
+    else{title=o.name+" · "+flName(f);subtxt="Vælg bolig"}}
+  else{showBack=!!S.cur;title=o?o.name:"SP2 Dåsekontrol";subtxt=ogSubLine(o)}
+  back.style.display=showBack?"":"none";ht.textContent=title;sub.textContent=subtxt}
+function navBack(){const o=og();
+  if(S.view==="tegn"||S.view==="afvig"){S.view=S.cur?"floors":"home";S.uf="";save();render();scrollTo(0,0);return}
+  if(S.view==="tag"){S.view="floors";S.uf="";save();render();scrollTo(0,0);return}
+  if(S.view.startsWith("f:")&&S.uf){S.uf="";save();render();scrollTo(0,0);return}
+  if(S.view.startsWith("f:")){S.view="floors";S.uf="";save();render();scrollTo(0,0);return}
+  if(S.view==="floors"){S.cur="";S.view="home";S.uf="";save();render();scrollTo(0,0);return}
+  S.view="home";S.uf="";save();render();scrollTo(0,0)}
+function pickOg(id){S.cur=id;S.view="floors";S.uf="";save();render();scrollTo(0,0)}
 function go(v,uf){S.view=v;S.uf=uf||"";save();render();scrollTo(0,0)}
+function goHome(){S.cur="";S.view="home";S.uf="";save();render();scrollTo(0,0)}
+function goFloor(f){S.view="f:"+f;S.uf="";save();render();scrollTo(0,0)}
+function goUnit(f,u){S.view="f:"+f;S.uf=u;save();render();scrollTo(0,0)}
+function menuDlg(){const o=og();
+  $("sheet").innerHTML=`<h2>Menu</h2>
+<div class="lbl">Byggeplads / projekt</div><input id="dproj" value="${esc(S.proj||"")}" placeholder="Fx adresse eller sagsnr.">
+${o?`<div class="row" style="margin-top:12px"><button class="btn" style="flex:1" onclick="closeDlg();ogDialog('${o.id}')">⚙︎ Opsætning · ${esc(o.name)}</button></div>`:""}
+<div class="row" style="margin-top:8px"><button class="btn p" style="flex:1" onclick="closeDlg();ogDialog()">+ Egen opgang</button></div>
+<div class="sec">Gå til</div>
+<div class="row"><button class="btn" style="flex:1" onclick="closeDlg();goTegn()">📐 Tegninger</button><button class="btn" style="flex:1" onclick="closeDlg();go('afvig')">⚠ Afvigelser</button></div>
+${o?`<div class="row" style="margin-top:8px"><button class="btn" style="flex:1" onclick="closeDlg();go('tag')">🏠 Tag · ${esc(o.name)}</button></div>`:""}
+<div class="sec">Data</div>
+<p class="mut" style="margin:0 0 8px">Alt gemmes automatisk på denne telefon. Tag en backup jævnligt.</p>
+<div class="row"><button class="btn" onclick="closeDlg();exportCSV()">Eksportér CSV</button><button class="btn" onclick="closeDlg();printAll()">Udskriv / PDF</button></div>
+<div class="row" style="margin-top:8px"><button class="btn" onclick="closeDlg();backup()">Gem backup</button><label class="btn addph">Indlæs backup<input type="file" accept=".json,application/json" onchange="closeDlg();restore(event)"></label></div>
+<div class="row" style="margin-top:14px"><button class="btn" style="flex:1" onclick="S.proj=$('dproj').value;save();closeDlg();render()">Luk</button></div>`;
+  $("dlg").classList.add("on");
+  const inp=$("dproj");if(inp)inp.oninput=e=>{S.proj=e.target.value;$("proj").value=S.proj;save()}}
+
+function homeView(){const c={};S.ogs.forEach(o=>{const p=ogProg(o);c[o.id]=p});
+  const pn=0; // bygningsplaner er under Tegninger
+  let h=`<button class="big" style="margin-bottom:12px" onclick="goTegn()">🏢 Bygningsplaner &amp; lejlighedstegninger<small>Se planer for F1, kælder, tag – og lejlighedsplaner</small></button>`;
+  h+=`<h2 style="margin:4px 0 2px">Vælg opgang</h2><p class="mut" style="margin:0 0 8px">Tryk på en opgang, så vælger du etage og bolig.</p>`;
+  const auto=S.ogs.filter(x=>x.auto), own=S.ogs.filter(x=>!x.auto);
+  const bs=[...new Set(auto.map(x=>x.tgB))].sort((a,b)=>a.localeCompare(b,"da",{numeric:true}));
+  bs.forEach(b=>{h+=`<h3 style="margin:14px 0 6px;font-size:15px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em">Bygning ${b}</h3><div class="grid">`;
+    auto.filter(x=>x.tgB===b).forEach(x=>{const p=c[x.id];const fl=floorsOf(x).filter(f=>f!=="K");
+      h+=`<button class="big" onclick="pickOg('${x.id}')">${esc(x.name)}<small>${x.rk?"Rækkehus":x.auto&&tgList(x.tgB,x.tgO).some(d=>d.f.length>1&&spanKey(d)!=="R")?"Duplex · ":""}${fl.map(flName).join(" · ")}${p.c.n?` · ${p.c.n} dåse${p.c.n===1?"":"r"}`:""}</small>${badge(p.afv)}</button>`});
+    h+=`</div>`});
+  if(own.length){h+=`<h3 style="margin:14px 0 6px;font-size:15px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em">Egne opgange</h3><div class="grid">`;
+    own.forEach(x=>{const p=c[x.id];h+=`<button class="big" onclick="pickOg('${x.id}')">${esc(x.name)}<small>${ogSubLine(x)}${p.c.n?` · ${p.c.n} dåse${p.c.n===1?"":"r"}`:""}</small>${badge(p.afv)}</button>`});
+    h+=`</div>`}
+  h+=`<div class="row" style="margin-top:14px"><button class="btn p" style="flex:1" onclick="ogDialog()">+ Egen opgang</button><button class="btn" style="flex:1" onclick="go('afvig')">⚠ Afvigelser</button></div>`;
+  return h}
+function floorsView(o){const fl=floorsOf(o).slice().reverse();const tl=S.tag.filter(t=>t.og===o.id);const ta=tl.filter(t=>t.status==="afvigelse").length;
+  let h=`<button class="back" onclick="goHome()">‹ Alle opgange</button><h2 style="margin:4px 0">${esc(o.name)}</h2><p class="mut" style="margin:0 0 8px">${esc(ogSubLine(o))}</p>`;
+  if(planFor(o.tgB).length)h+=`<div class="chips noprint" style="margin:0 0 10px">${planFor(o.tgB).map(planChip).join("")}</div>`;
+  h+=`<h3 style="margin:8px 0 4px">Vælg etage</h3><div class="grid">`;
+  fl.forEach(f=>{const c=flProg(o,f);const us=unitsOf(o,f).filter(u=>u!=="OG");
+    h+=`<button class="big" onclick="goFloor('${f}')">${flName(f)}<small>${us.length?us.map(u=>unShort(o,f,u)).join(" · "):"Opgang"}${c.n?` · ${progLine(c)}`:""}</small>${badge(c.bad)}</button>`});
+  h+=`<button class="big" onclick="go('tag')">🏠 Tag<small>${tl.length?tl.length+" punkt"+(tl.length===1?"":"er")+(ta?` · ${ta} afv.`:""):"Noter, solceller, røgopluk …"}</small>${badge(ta)}</button></div>`;
+  h+=`<div class="row" style="margin-top:12px">${o.tgB&&TG[o.tgB]?`<button class="btn" onclick="tgOpenOv('${o.tgB}')">🗺 Oversigtsplan</button>`:""}<button class="btn" onclick="ogDialog('${o.id}')">⚙︎ Opsætning</button><button class="btn" onclick="goTegn()">📐 Tegninger</button></div>`;
+  return h}
+function unitsView(o,f){const us=unitsOf(o,f);
+  let h=`<button class="back" onclick="go('floors')">‹ ${esc(o.name)}</button><h2 style="margin:4px 0">${esc(o.name)} · ${flName(f)}</h2>`;
+  h+=tgFloorCard(o,f);
+  h+=`<h3 style="margin:8px 0 4px">Vælg bolig</h3><div class="grid">`;
+  us.forEach(u=>{const c=unProg(o,f,u);
+    h+=`<button class="big" onclick="goUnit('${f}','${u}')">${esc(unName(o,f,u))}<small>${u!=="OG"&&o.auto?u+" · ":""}${progLine(c)}</small>${badge(c.bad)}</button>`});
+  h+=`</div>`;
+  return h}
+function unitView(o,f,u){const l=S.boxes.filter(b=>b.og===o.id&&b.fl===f&&b.un===u);
+  let h=`<button class="back" onclick="goFloor('${f}')">‹ ${flName(f)}</button>`;
+  h+=unitHead(o,f,u,l);
+  l.forEach(b=>h+=boxHTML(b));
+  if(!l.length)h+=`<p class="mut">Ingen dåser her endnu. Tryk på "+ Tilføj dåse".</p>`;
+  return h}
 function boxHTML(b,ctx){const [c,t]=stat(b);const pc=pcount(b.id);const tl=typLbl(b);return `<div class="card" id="b_${b.id}">
 ${ctx?`<div class="mut" style="margin-bottom:4px">${esc(ctx)}</div>`:""}<div class="row" style="justify-content:space-between"><b>Dåse ${esc(boxNo(b))}${tl?` · ${esc(tl)}`:""}${b.rum?` <span class="mut">· ${esc(b.rum)}</span>`:""}</b><span class="row" style="gap:6px">${pc?`<span class="pill">📷 ${pc}</span>`:""}<span class="pill ${c}">${t}</span></span></div>
 <div class="lbl noprint">Dåse til</div>
 <div class="typ noprint">${DTYPES.map(k=>`<button class="${b.typ===k?"on":""}" onclick="setTyp('${b.id}','${k}')">${k}</button>`).join("")}</div>
 ${b.typ==="Andet"?`<input class="noprint" style="margin-top:8px" value="${esc(b.typTxt)}" placeholder="Hvilken type? (fx røgalarm, emhætte)" oninput="upd('${b.id}','typTxt',this.value)">`:""}
 <div class="lbl noprint">Rum</div>
-<input class="noprint" value="${esc(b.rum)}" placeholder="Rum (fx køkken, stue)" oninput="upd('${b.id}','rum',this.value)">
+<input class="noprint" id="rum_${b.id}" value="${esc(b.rum)}" placeholder="Eller skriv frit …" oninput="upd('${b.id}','rum',this.value);paintRum('${b.id}')">
+<div class="rum noprint" id="rumc_${b.id}">${ROOMS.map(r=>`<button type="button" class="${b.rum===r?"on":""}" onclick="setRum('${b.id}','${r}')">${r}</button>`).join("")}</div>
 <div class="lbl">Afvigelser <span class="mut">(intet krydset = OK)</span></div>
 <label class="ck ${b.ad?"on":""}"><input type="checkbox" ${b.ad?"checked":""} onchange="setAf('${b.id}','ad',this.checked)">Afvigelse dåse</label>
 ${b.ad?`<textarea data-k="adNote" placeholder="Hvad er galt med dåsen? Fx forkert placering, højde, mangler…" oninput="upd('${b.id}','adNote',this.value)">${esc(b.adNote)}</textarea>`:""}
@@ -279,6 +355,8 @@ ${photoBlock(b.id)}
 <div class="row noprint" style="margin-top:10px">${addPhotoBtn(b.id)}<button class="btn" onclick="boxTg('${b.id}')">📐 Tegning</button><span style="flex:1"></span><button class="btn d" onclick="del('${b.id}')">Slet dåse</button></div>
 <div class="mut" style="margin-top:6px">${b.tid?"Senest ændret "+esc(b.tid):""}</div></div>`}
 function setTyp(id,k){const b=item(id);if(!b)return;b.typ=b.typ===k?"":k;b.tid=now();save();render();if(b.typ==="Andet")setTimeout(()=>{const e=document.querySelector(`#b_${id} input[placeholder^="Hvilken"]`);e&&e.focus()},30)}
+function setRum(id,r){const b=item(id);if(!b)return;b.rum=b.rum===r?"":r;b.tid=now();save();const inp=$("rum_"+id);if(inp)inp.value=b.rum;paintRum(id)}
+function paintRum(id){const b=item(id);const box=$("rumc_"+id);if(!b||!box)return;[...box.querySelectorAll("button")].forEach(btn=>btn.classList.toggle("on",btn.textContent===b.rum))}
 function setAf(id,k,v){upd(id,k,!!v);render();if(v)setTimeout(()=>{const e=document.querySelector(`#b_${id} textarea[data-k="${k}Note"]`);e&&e.focus()},30)}
 function tagHTML(t,ctx){const [c,s]=tstat(t);const pc=pcount(t.id);return `<div class="card" id="b_${t.id}">
 ${ctx?`<div class="mut" style="margin-bottom:4px">${esc(ctx)}</div>`:""}<div class="row" style="justify-content:space-between"><b>${esc(t.cat)}${t.title?` <span class="mut">· ${esc(t.title)}</span>`:""}</b><span class="row" style="gap:6px">${pc?`<span class="pill">📷 ${pc}</span>`:""}<span class="pill ${c}">${s}</span></span></div>
@@ -324,19 +402,22 @@ ${fl.map(f=>`<tr><td><a href="#" onclick="go('f:${f}');return false">${flName(f)
   const hid=mine.filter(b=>hidden(b,o));if(hid.length){h+=`<div class="sec">Skjulte dåser (${hid.length})</div>`;hid.forEach(b=>h+=boxHTML(b,flName(b.fl)+" · "+b.un))}
   return h}
 let PRINTALL=false;
-function render(){ogSel();tabs();const o=og();let h="";$("ptitle").textContent="SP2 Dåsekontrol"+(S.proj?" – "+S.proj:"")+" · udskrevet "+now();
+function render(){const o=og();let h="";$("ptitle").textContent="SP2 Dåsekontrol"+(S.proj?" – "+S.proj:"")+" · udskrevet "+now();$("proj").value=S.proj||"";
   if(PRINTALL){S.ogs.forEach(x=>{h+=`<h2 style="margin-top:18px">${esc(x.name)}</h2>`;floorsOf(x).forEach(f=>h+=floorHTML(x,f,"",true));const hid=S.boxes.filter(b=>b.og===x.id&&hidden(b,x));hid.forEach(b=>h+=boxHTML(b,"Skjult: "+flName(b.fl)+" · bolig "+b.un));const tl=S.tag.filter(t=>t.og===x.id);if(tl.length){h+=`<div class="sec">Tag</div>`;tl.forEach(t=>h+=tagHTML(t))}})}
-  else if(S.view==="oversigt")h+=noticeHTML()+overview(o);
+  else if(!S.cur||S.view==="home"){S.view="home";h+=noticeHTML()+homeView()}
+  else if(S.view==="floors"||S.view==="oversigt"){S.view="floors";h+=floorsView(o)}
   else if(S.view==="tegn")h+=tegnView();
   else if(S.view==="tag")h+=tagView(o);
-  else if(S.view==="afvig"){const bl=S.boxes.filter(b=>stat(b)[0]==="bad"),tl=S.tag.filter(t=>t.status==="afvigelse");h+=`<h2>Afvigelser – alle opgange (${bl.length+tl.length})</h2>`;
-    S.ogs.forEach(x=>{const b2=bl.filter(b=>b.og===x.id),t2=tl.filter(t=>t.og===x.id);if(!b2.length&&!t2.length)return;h+=`<div class="sec">${esc(x.name)}</div>`;
+  else if(S.view==="afvig"){const bl=S.boxes.filter(b=>stat(b)[0]==="bad"),tl=S.tag.filter(t=>t.status==="afvigelse");h+=`<button class="back" onclick="navBack()">‹ Tilbage</button><h2>Afvigelser – alle opgange (${bl.length+tl.length})</h2>`;
+    S.ogs.forEach(x=>{const b2=bl.filter(b=>b.og===x.id),t2=tl.filter(t=>t.og===x.id);if(!b2.length&&!t2.length)return;h+=`<div class="sec"><a href="#" onclick="pickOg('${x.id}');return false">${esc(x.name)}</a></div>`;
       b2.forEach(b=>{const pc=pcount(b.id);h+=boxHTML(b,flName(b.fl)+" · "+unName(x,b.fl,b.un)+(typLbl(b)?" · "+typLbl(b):"")+(b.rum?" · "+b.rum:"")+(pc?" · 📷 "+pc:" · ingen billeder"))});
       t2.forEach(t=>{const pc=pcount(t.id);h+=tagHTML(t,"Tag · "+t.cat+(pc?" · 📷 "+pc:" · ingen billeder"))})});
     if(!bl.length&&!tl.length)h+=`<p class="mut">Ingen afvigelser registreret.</p>`}
-  else if(S.view.startsWith("f:")){const f=S.view.slice(2);if(floorsOf(o).includes(f))h+=floorHTML(o,f,S.uf);else{S.view="oversigt";return render()}}
-  $("main").innerHTML=h}
-function add(f,u){const n=S.boxes.filter(b=>b.og===S.cur&&b.fl===f&&b.un===u).length+1;const b={id:uid(),og:S.cur,fl:f,un:u,nr:String(n),typ:"",typTxt:"",rum:"",ad:false,adNote:"",ar:false,arNote:"",kom:"",m:2,tid:now()};S.boxes.push(b);save();render();setTimeout(()=>{const e=$("b_"+b.id);e&&e.scrollIntoView({behavior:"smooth"})},50)}
+  else if(S.view.startsWith("f:")){const f=S.view.slice(2);if(!floorsOf(o).includes(f)){S.view="floors";return render()}
+    h+=S.uf&&unitsOf(o,f).includes(S.uf)?unitView(o,f,S.uf):unitsView(o,f)}
+  else{S.view="floors";return render()}
+  $("main").innerHTML=h;headBar()}
+function add(f,u){S.view="f:"+f;S.uf=u;const n=S.boxes.filter(b=>b.og===S.cur&&b.fl===f&&b.un===u).length+1;const b={id:uid(),og:S.cur,fl:f,un:u,nr:String(n),typ:"",typTxt:"",rum:"",ad:false,adNote:"",ar:false,arNote:"",kom:"",m:2,tid:now()};S.boxes.push(b);save();render();setTimeout(()=>{const e=$("b_"+b.id);e&&e.scrollIntoView({behavior:"smooth"})},50)}
 function upd(id,k,v){const b=item(id);if(!b)return;b[k]=v;b.tid=now();save()}
 function set(id,k,v){upd(id,k,v);render()}
 async function del(id){const pc=pcount(id);if(confirm("Slet denne dåse"+(pc?" og dens "+pc+(pc===1?" billede":" billeder"):"")+"?")){S.boxes=S.boxes.filter(b=>b.id!==id);save();try{await deletePhotosOf(id)}catch(e){}render();updStorage()}}
@@ -366,7 +447,7 @@ ${!D.isNew&&S.ogs.length>1?`<div style="margin-top:18px"><button class="btn d" o
 function closeDlg(){$("dlg").classList.remove("on");D=null}
 function saveDlg(){const name=(D.name||"").trim()||"Opgang";
   if(D.auto){const o=ogById(D.id);const lost=S.boxes.filter(b=>b.og===o.id&&b.fl==="K").length;if(o.kaelder&&!D.kaelder&&lost&&!confirm(lost+" dåse(r) i kælderen skjules (slettes ikke). Fortsæt?"))return;o.name=name;o.kaelder=D.kaelder;save();closeDlg();render();toast("Opsætning gemt");return}const cfg={id:D.id,name,units:D.units,top:D.top,kaelder:D.kaelder,tgB:D.tgB||"",tgO:D.tgB?(D.tgO||""):""};
-  if(D.isNew){S.ogs.push(cfg);S.cur=cfg.id;S.view="oversigt";save();closeDlg();render();toast("Opgang oprettet");return}
+  if(D.isNew){S.ogs.push(cfg);S.cur=cfg.id;S.view="floors";S.uf="";save();closeDlg();render();toast("Opgang oprettet");return}
   const o=ogById(D.id);const mine=S.boxes.filter(b=>b.og===o.id);
   const newly=mine.filter(b=>!hidden(b,o)&&hidden(b,cfg)).length;
   if(newly&&!confirm(newly+" dåse(r) ligger på boliger/etager, som ikke findes i den nye opsætning.\n\nDe bliver IKKE slettet, men vises under 'Skjulte dåser' i oversigten, indtil du ændrer opsætningen tilbage.\n\nFortsæt?"))return;
@@ -376,7 +457,7 @@ function saveDlg(){const name=(D.name||"").trim()||"Opgang";
 async function delOg(){const o=ogById(D.id);const b=S.boxes.filter(x=>x.og===o.id),t=S.tag.filter(x=>x.og===o.id);
   if(!confirm("Slet '"+o.name+"' med "+b.length+" dåser og "+t.length+" tag-punkter, inkl. billeder? Det kan ikke fortrydes."))return;
   for(const x of [...b,...t]){try{await deletePhotosOf(x.id)}catch(e){}}
-  S.boxes=S.boxes.filter(x=>x.og!==o.id);S.tag=S.tag.filter(x=>x.og!==o.id);S.ogs=S.ogs.filter(x=>x.id!==o.id);S.cur=S.ogs[0].id;S.view="oversigt";save();closeDlg();render();updStorage()}
+  S.boxes=S.boxes.filter(x=>x.og!==o.id);S.tag=S.tag.filter(x=>x.og!==o.id);S.ogs=S.ogs.filter(x=>x.id!==o.id);S.cur="";S.view="home";S.uf="";save();closeDlg();render();updStorage()}
 
 /* ===== Eksport / backup ===== */
 function dl(name,data,type){const a=document.createElement("a");a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
@@ -433,7 +514,7 @@ function tgBySide(s){const b=s.split("-")[0];const d=TG[b]&&TG[b].d.find(x=>x.s=
 function tgName(d){const n=S.tg.names[d.s];return n!=null?n:d.g}
 function tgOk(d){return S.tg.names[d.s]!=null}
 function tgSel(){let t=S.tg.sel||{};if(!TG[t.b])t={b:"F1"};const os=tgOgs(t.b);if(!os.includes(t.o))t.o=os[0];const fs=tgFls(t.b,t.o);if(!fs.includes(t.f))t.f=fs[0];S.tg.sel=t;return t}
-function goTegn(){const o=og();if(o&&o.tgB&&TG[o.tgB]){S.tg.sel={b:o.tgB,o:o.tgO||"",f:(S.view.startsWith("f:")?dfl2tg(S.view.slice(2)):(S.tg.sel||{}).f)}}go("tegn")}
+function goTegn(){const o=og();if(o&&o.tgB&&TG[o.tgB]){S.tg.sel={b:o.tgB,o:o.tgO||"",f:(S.view.startsWith("f:")?dfl2tg(S.view.slice(2)):(S.tg.sel||{}).f)}}else if(!S.tg.sel||!TG[S.tg.sel.b])S.tg.sel={b:"F1"};go("tegn")}
 function tgPick(k,v){const t=tgSel();t[k]=v;save();render()}
 function tgSetName(s,v){v=String(v||"").trim();S.tg.names[s]=v;save();render();toast("Navn gemt: "+(v||"(tomt)"))}
 function tgUnset(s){delete S.tg.names[s];save();render()}
@@ -558,7 +639,7 @@ function tgReset(){if(!TV.page)return;TV.z=1;tgClamp();tgApply();tgSched()}
 })();
 
 /* ===== Start + opdatering ===== */
-(async()=>{seedOgs(S);fix(S);save();render();
+(async()=>{seedOgs(S);fix(S);if(S.view==="oversigt")S.view=S.cur?"floors":"home";save();render();
   try{DB=await openDB();
     if(S.photoCopy==="pending"){try{S.copiedPhotos=await copyOldPhotos()}catch(e){S.copiedPhotos=0}S.photoCopy="done";save()}
     await loadPhotos()}catch(e){toast("Billeder er ikke tilgængelige i denne browser")}
