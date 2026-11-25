@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Termostat-tjek område D</title>
+<meta name="theme-color" content="#12355b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Termostat D">
+<style>
+:root{--blue:#12355b;--blue2:#1d5a99;--bg:#eef1f5;--card:#fff;--text:#111;--muted:#4a5562;--line:#c9d1db;
+  --red:#b3001b;--redbg:#ffe3e6;--green:#0b6b2f;--greenbg:#dcf3e3;--orange:#8a4b00;--orangebg:#fff0d6;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--text);font:18px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+#top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;background:var(--blue);color:#fff;padding:calc(8px + var(--safe-top)) 8px 8px;min-height:64px}
+#titles{flex:1;min-width:0;text-align:center}
+#title{font-weight:700;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#subtitle{font-size:14px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbtn{background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.5);color:#fff;border-radius:12px;min-height:52px;min-width:62px;padding:0 8px;font-weight:700;font-size:17px}
+.tb-back{font-size:34px;line-height:1;padding-bottom:4px;min-width:56px}
+.topbtn.ghost{visibility:hidden}
+main{padding:12px 12px calc(40px + var(--safe-bottom));max-width:820px;margin:0 auto}
+h2{font-size:20px;margin:22px 4px 8px}
+.muted{color:var(--muted)}.small{font-size:15px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:60px;border-radius:14px;border:2px solid var(--blue);background:#fff;color:var(--blue);font-weight:700;font-size:19px;padding:8px 14px;text-align:center}
+.btn.primary{background:var(--blue);color:#fff}
+.btn.small{min-height:48px;font-size:17px}
+.btn:active,.tile:active{filter:brightness(.92)}
+.btnrow{display:flex;gap:10px;margin:10px 0}.btnrow>*{flex:1}
+.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px;margin:0 0 10px}
+.sync{font-size:15px;color:var(--muted);margin:2px 4px 12px}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:#d9dee6;margin:8px 0 6px}
+.bar i{display:block;height:100%}.bar .g{background:var(--green)}.bar .r{background:var(--red)}
+.counts{display:flex;gap:8px;margin-top:10px}
+.cnt{flex:1;border-radius:12px;padding:10px 6px;text-align:center;border:2px solid var(--line);background:#fff;min-height:74px}
+.cnt b{display:block;font-size:26px;line-height:1.1}
+.cnt span{font-size:14px;font-weight:600}
+.cnt.ok{background:var(--greenbg);border-color:var(--green);color:var(--green)}
+.cnt.fejl{background:var(--redbg);border-color:var(--red);color:var(--red)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{display:flex;flex-direction:column;justify-content:center;min-height:96px;border-radius:14px;background:var(--card);border:2px solid var(--line);padding:10px 12px;text-align:left}
+.tile b{font-size:24px}.tile .sub{font-size:14px;color:var(--muted);margin-top:2px}
+.tile.done{border-color:var(--green);background:var(--greenbg)}
+.chips{display:flex;gap:8px;margin:4px 0 12px;position:sticky;top:calc(64px + var(--safe-top));z-index:10;background:var(--bg);padding:8px 0}
+.chip{flex:1;min-height:48px;border-radius:24px;border:2px solid var(--line);background:#fff;font-weight:700;font-size:15px;padding:0 4px;white-space:nowrap}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.unit{background:var(--card);border:2px solid var(--line);border-left-width:10px;border-radius:14px;padding:10px 12px;margin-bottom:10px}
+.unit.ok{border-color:var(--green)}.unit.fejl{border-color:var(--red)}
+.uhead{display:flex;align-items:baseline;gap:8px}
+.uname{font-weight:700;font-size:20px;flex:1}
+.ulink{background:none;border:0;color:var(--blue2);font-size:15px;text-decoration:underline;padding:6px 0 6px 8px}
+.utype{font-size:14px;color:var(--muted);margin-bottom:8px}
+.two{display:flex;gap:10px}
+.pick{flex:1;min-height:62px;border-radius:14px;border:2px solid var(--line);background:#fff;font-weight:700;font-size:19px}
+.pick.ok.on{background:var(--green);border-color:var(--green);color:#fff}
+.pick.fejl.on{background:var(--red);border-color:var(--red);color:#fff}
+.sub2{margin-top:10px;padding:10px;border-radius:12px;background:var(--redbg)}
+.sub2 .lbl{font-size:15px;font-weight:700;margin-bottom:6px;color:var(--red)}
+.pick.t{min-height:54px;font-size:18px}
+.pick.t.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.check{display:flex;align-items:center;gap:10px;min-height:52px;margin-top:8px;font-weight:600}
+.check input{width:28px;height:28px;flex:none;accent-color:var(--red)}
+.check.tele{border:2px solid var(--line);border-radius:12px;padding:6px 10px;margin-top:10px;background:#fff}
+.check.tele input{accent-color:var(--green)}
+.check.tele.on{border-color:var(--green);background:var(--greenbg);color:var(--green)}
+textarea,input[type=text],input[type=password]{width:100%;border:2px solid var(--line);border-radius:12px;padding:10px;background:#fff;font-size:18px}
+textarea{min-height:76px;resize:vertical}
+.umeta{font-size:13px;color:var(--muted);margin-top:8px;display:flex;gap:8px;align-items:center}
+.umeta span{flex:1}
+.warn{color:var(--orange);background:var(--orangebg);border-radius:8px;padding:6px 8px;font-size:15px;font-weight:600;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:15px;background:#fff}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#e6ebf2}
+.tblwrap{overflow-x:auto;border-radius:10px}
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+.dbox{background:#fff;border-radius:16px;padding:16px;width:100%;max-width:440px}
+.dbox h3{margin:0 0 10px;font-size:20px}
+label.f{display:block;font-weight:700;margin:10px 0 4px}
+.err{color:var(--red);font-weight:600;margin-top:8px}
+#toast{position:fixed;left:50%;bottom:calc(24px + var(--safe-bottom));transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:12px;z-index:60;font-size:16px;max-width:90%}
+.rhead{display:none}
+@media print{
+  #top,.noprint,#toast{display:none!important}
+  html,body{background:#fff;font-size:11pt}
+  main{max-width:none;padding:0}
+  .rhead{display:block}
+  h2{break-after:avoid}
+  tr{break-inside:avoid}
+  .tblwrap{overflow:visible}
+}
+</style>
+</head>
+<body>
+<header id="top">
+  <button id="btnBack" class="topbtn tb-back" aria-label="Tilbage">‹</button>
+  <div id="titles"><div id="title">Termostat-tjek</div><div id="subtitle">Område D</div></div>
+  <button id="btnMenu" class="topbtn" aria-label="Lister og rapport">Lister</button>
+</header>
+<main id="main"></main>
+<div id="dialog" class="overlay" hidden><div class="dbox" id="dbox"></div></div>
+<div id="toast" hidden></div>
+
+<script>
+"use strict";
+/* Termostat-tjek område D – midlertidig app til omfortrådning og funktionstest af termostat i badekabiner.
+ * Deler data med holdet via samme Supabase-projekt og samme fælles kode som Stejlepladsen-appen.
+ * Alle rækker ligger i tabellen "meta" med nøgler, der starter med "termD:" – de kan slettes samlet, når arbejdet er afleveret. */
+const CFG = {
+  url: "https://zaktjknwboubewatrhlj.supabase.co",
+  key: "sb_publishable_0cosreRI4xExKF1ZPzbhMg_tSB4Uozw",
+  email: "team@sp2-daasekontrol.dk",
+  prefix: "termD:"
+};
+
+/* ---------- Boliger (aflæst af Artelia ISP1_K07_L1XX_H04_EXX_N931 rev. E, oversigtsplaner side 3–8) ---------- */
+const FLOORS = ["Stue", "1. sal", "2. sal", "3. sal", "4. sal", "5. sal"];
+const FSHORT = ["st.", "1.", "2.", "3.", "4.", "5."];
+const TYPE = {11:"KOR_1V_HC",12:"KOR_1V_T01",13:"KOR_1V_T01_S",14:"KOR_SSB_T01",18:"OPG_2V_T03_S",19:"OPG_2V_T05",
+  42:"OPG_4V_T03",43:"OPG_4V_T03_S",45:"OPG_4V_T05",47:"OPG_4V_T06",50:"OPG_4V-T_T05",51:"OPG_4V-T_T05_S",52:"OPG_4V-T_T06",
+  53:"OPG_4V-T_T07",77:"OPG_4V_T03_S A",78:"OPG_4V_T03 A",79:"OPG_4V_T05 A",81:"OPG_4V-T_T05 A",82:"OPG_4V-T_T05_S A",
+  83:"ALT_2V_T01 D",84:"ALT_2V_T01_S A",86:"ALT_2V_T01_S C",87:"KOR_1V_T03",88:"KOR_SSB_T01 A",89:"KOR_1V_T04",
+  98:"OPG_2V_T03_S A",99:"ALT_2V_T01_S B"};
+// Pr. opgang: én liste pr. etage (stue først) med tegningsside for hver bolig
+const PLAN = {
+  "D1-A": [[78,43],[45,43],[45,43],[45,43],[45,43],[50,51]],
+  "D1-B": [[42,77],[79,77],[79,77],[79,77],[81,82]],
+  "D2":   [[84,84,84,83,83,83],[86,86,86,99,99,99],[86,86,86,99,99,99],[86,86,86,99,99,99],[86,86,86,99,99,99],[86,86]],
+  "D4":   [[12,12,12,14,88,13],[11,12,12,12,12,87,14,88,13],[11,12,12,12,12,87,14,88,13],[89,12,12,12,12,87,14,88,13],[89,12,12,12,12]],
+  "D5":   [[],[18,19,47],[18,19,47],[98,19,47],[53,52]]
+};
+const OPGANGE = Object.keys(PLAN);
+function kind(code){
+  if (code.includes("HC")) return "HC-ungdomsbolig";
+  if (code.startsWith("KOR")) return "Ungdomsbolig";
+  const m = code.match(/_(\d)V/); return m ? m[1] + "-vær." : "Bolig";
+}
+const UNITS = [];
+for (const o of OPGANGE) PLAN[o].forEach((arr, fi) => arr.forEach((side, i) => {
+  UNITS.push({ id: `${o}-${fi}-${i + 1}`, o, fi, n: `${FSHORT[fi]} nr. ${i + 1}`, type: TYPE[side], side, kind: kind(TYPE[side]) });
+}));
+const UNIT = new Map(UNITS.map((u) => [u.id, u]));
+
+/* ---------- Lokalt lager (virker også uden dækning) ---------- */
+const mem = {};
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("termD." + k); return v === null ? (k in mem ? mem[k] : d) : JSON.parse(v); } catch (e) { return k in mem ? mem[k] : d; } },
+  set(k, v) { mem[k] = v; try { localStorage.setItem("termD." + k, JSON.stringify(v)); } catch (e) {} }
+};
+let DATA = store.get("data", {});          // id -> {s,t,ts,a,n,nm,by,at}
+let DIRTY = new Set(store.get("dirty", []));
+let SESSION = store.get("session", null);
+let MY_NAME = store.get("name", "");
+let LOCAL_ONLY = store.get("local", false);
+const SYNC = { busy: false, again: false, last: null, error: null };
+const rec = (id) => DATA[id] || {};
+const saveData = () => { store.set("data", DATA); store.set("dirty", [...DIRTY]); };
+
+function status(id) {            // "ok" | "fejl" | "" (mangler)
+  const r = rec(id);
+  if (r.s === "fejl" || r.a) return "fejl";
+  return r.s === "ok" && r.ts ? "ok" : "";      // OK kræver både termostat OK og telestat på auto
+}
+function change(id, patch) {
+  DATA[id] = { ...rec(id), ...patch, by: MY_NAME || "Ukendt", at: new Date().toISOString() };
+  DIRTY.add(id); saveData(); syncSoon();
+}
+const uname = (u) => rec(u.id).nm || u.n;
+const termLabel = (r) => r.s !== "fejl" ? "" : r.t === "neotherm" ? "Neotherm" : r.t === "noname" ? "NoName" : "Ikke valgt";
+
+/* ---------- Deling (Supabase) ---------- */
+async function authCall(grant, body) {
+  const r = await fetch(`${CFG.url}/auth/v1/token?grant_type=${grant}`, { method: "POST", headers: { apikey: CFG.key, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j.error_description || j.msg || j.message || `Fejl ${r.status}`); e.status = r.status; throw e; }
+  return { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: j.expires_at || Math.floor(Date.now() / 1000) + (j.expires_in || 3600) };
+}
+async function ensureToken() {
+  if (!SESSION) throw new Error("Ikke forbundet");
+  if (SESSION.expires_at - 60 > Date.now() / 1000) return;
+  try { SESSION = await authCall("refresh_token", { refresh_token: SESSION.refresh_token }); store.set("session", SESSION); }
+  catch (e) { if (e.status === 400 || e.status === 401) { SESSION = null; store.set("session", null); } throw e; }
+}
+async function api(path, opts = {}, retry = true) {
+  await ensureToken();
+  const r = await fetch(CFG.url + path, { ...opts, headers: { apikey: CFG.key, Authorization: `Bearer ${SESSION.access_token}`, ...(opts.headers || {}) } });
+  if (r.status === 401 && retry) { SESSION.expires_at = 0; return api(path, opts, false); }
+  if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`Server ${r.status}: ${t.slice(0, 120)}`); }
+  return r;
+}
+const parseTs = (t) => new Date(String(t).replace(/(\.\d{3})\d+/, "$1"));
+let syncT;
+function syncSoon(ms = 1500) { clearTimeout(syncT); syncT = setTimeout(syncNow, ms); updateSync(); }
+async function syncNow() {
+  if (!SESSION || !navigator.onLine) { updateSync(); return; }
+  if (SYNC.busy) { SYNC.again = true; return; }
+  SYNC.busy = true; updateSync();
+  let changed = false;
+  try {
+    // 1. Egne ændringer op
+    const ids = [...DIRTY];
+    if (ids.length) {
+      const sent = ids.map((id) => ({ id, at: rec(id).at }));
+      await api("/rest/v1/meta", { method: "POST", headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify(ids.map((id) => ({ key: CFG.prefix + id, value: rec(id), deleted: false }))) });
+      for (const s of sent) if (rec(s.id).at === s.at) DIRTY.delete(s.id);   // ændret igen imens? så sendes den næste gang
+      saveData();
+    }
+    // 2. De andres ændringer ned (2 min overlap)
+    const cur = store.get("cursor", null);
+    const since = cur ? new Date(parseTs(cur).getTime() - 120000).toISOString() : "1970-01-01T00:00:00Z";
+    let max = cur;
+    for (let off = 0; ; off += 1000) {
+      const r = await api(`/rest/v1/meta?select=key,value,deleted,updated_at&key=like.${encodeURIComponent(CFG.prefix + "*")}&updated_at=gt.${encodeURIComponent(since)}&order=updated_at.asc&offset=${off}&limit=1000`);
+      const rows = await r.json();
+      for (const row of rows) {
+        if (!max || parseTs(row.updated_at) > parseTs(max)) max = row.updated_at;
+        const id = row.key.slice(CFG.prefix.length);
+        if (!UNIT.has(id) || row.deleted || !row.value) continue;
+        const loc = rec(id), rem = row.value;
+        if (DIRTY.has(id) && (loc.at || "") >= (rem.at || "")) continue;      // min egen er nyere
+        if (JSON.stringify(loc) !== JSON.stringify(rem)) { DATA[id] = rem; DIRTY.delete(id); changed = true; }
+      }
+      if (rows.length < 1000) break;
+    }
+    if (max) store.set("cursor", max);
+    if (changed) saveData();
+    SYNC.last = new Date(); SYNC.error = null;
+  } catch (e) {
+    console.warn("Deling fejlede", e);
+    SYNC.error = navigator.onLine ? e.message : null;
+  }
+  SYNC.busy = false; updateSync();
+  if (!SESSION && !LOCAL_ONLY) { render(); return; }
+  if (changed) remoteChanged();
+  if (SYNC.again) { SYNC.again = false; syncSoon(400); }
+}
+function syncText() {
+  if (LOCAL_ONLY && !SESSION) return "📱 Kun på denne telefon – ikke delt med holdet";
+  if (!SESSION) return "⚪ Ikke forbundet til holdet";
+  if (SYNC.busy) return "🔄 Deler med holdet …";
+  if (!navigator.onLine) return `📴 Offline${DIRTY.size ? ` – ${DIRTY.size} ændringer venter` : ""}`;
+  if (SYNC.error) return `⚠️ Kunne ikke dele: ${SYNC.error}`;
+  if (DIRTY.size) return `⏳ ${DIRTY.size} ændringer venter på at blive delt`;
+  return `✅ Delt med holdet${SYNC.last ? " · " + SYNC.last.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" }) : ""}`;
+}
+function updateSync() { const e = document.getElementById("syncLine"); if (e) e.textContent = syncText(); }
+let pendingRender = false;
+function remoteChanged() {
+  const typing = ["INPUT", "TEXTAREA"].includes(document.activeElement && document.activeElement.tagName);
+  if (typing || !$("#dialog").hidden) { pendingRender = true; return; }
+  render(true);
+}
+
+/* ---------- Hjælpere ---------- */
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtAt = (iso) => { if (!iso) return ""; const d = new Date(iso); return d.toLocaleDateString("da-DK", { day: "numeric", month: "numeric" }) + " kl. " + d.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" }); };
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 2500); }
+function count(list) { const c = { ok: 0, fejl: 0, mangler: 0, n: list.length }; for (const u of list) { const s = status(u.id); c[s || "mangler"]++; } return c; }
+const route = () => (location.hash || "#hjem").slice(1).split("/").map(decodeURIComponent);
+const go = (h) => { if (location.hash === "#" + h) render(); else location.hash = h; };
+
+/* ---------- Skærme ---------- */
+function render(keepScroll) {
+  const y = window.scrollY;
+  const p = route();
+  if (!SESSION && !LOCAL_ONLY) { head("Termostat-tjek", "Område D", false); viewLogin(); return; }
+  if (p[0] === "o" && PLAN[p[1]]) viewOpgang(p[1], p[2] || "alle");
+  else if (p[0] === "liste") viewListe(p[1] || "fejl");
+  else if (p[0] === "rapport") viewRapport();
+  else viewHome();
+  if (keepScroll) window.scrollTo(0, y);
+}
+function head(title, sub, back) {
+  $("#title").textContent = title; $("#subtitle").textContent = sub || "";
+  $("#btnBack").classList.toggle("ghost", !back);
+  $("#btnMenu").classList.toggle("ghost", !SESSION && !LOCAL_ONLY);
+}
+let typedName = "";
+function viewLogin(err) {
+  $("#main").innerHTML = `
+    <div class="card">
+      <h2 style="margin-top:4px">Forbind til holdet</h2>
+      <p class="muted small">Brug samme fælles kode som i Stejlepladsen-appen. Så kan alle se, hvad der er tjekket.</p>
+      <label class="f" for="inName">Dit navn</label>
+      <input type="text" id="inName" autocomplete="given-name" value="${esc(typedName || MY_NAME)}">
+      <label class="f" for="inCode">Fælles kode</label>
+      <input type="password" id="inCode" autocomplete="current-password">
+      <div class="err" id="loginErr">${esc(err || "")}</div>
+      <div class="btnrow"><button class="btn primary" id="btnLogin">Forbind</button></div>
+      <button class="ulink" id="btnLocal">Brug uden deling (kun denne telefon)</button>
+    </div>`;
+  $("#btnLogin").onclick = async () => {
+    const name = $("#inName").value.trim(), code = $("#inCode").value;
+    typedName = name;
+    if (!name) { $("#loginErr").textContent = "Skriv dit navn."; return; }
+    if (!code) { $("#loginErr").textContent = "Skriv den fælles kode."; return; }
+    $("#btnLogin").disabled = true; $("#btnLogin").textContent = "Forbinder …";
+    try {
+      SESSION = await authCall("password", { email: CFG.email, password: code });
+      MY_NAME = name; store.set("session", SESSION); store.set("name", MY_NAME);
+      Object.keys(DATA).forEach((id) => DIRTY.add(id)); saveData();   // det, der evt. er tastet lokalt, sendes med op
+      render(); syncNow();
+    } catch (e) {
+      viewLogin(e.status === 400 ? "Koden er forkert." : "Kunne ikke forbinde: " + e.message);
+    }
+  };
+  $("#btnLocal").onclick = () => {
+    const name = $("#inName").value.trim();
+    if (!name) { $("#loginErr").textContent = "Skriv dit navn først."; return; }
+    MY_NAME = name; LOCAL_ONLY = true; store.set("name", name); store.set("local", true); render();
+  };
+}
+function countsHtml(c, base) {
+  return `<div class="counts">
+    <button class="cnt ok" data-go="${base}ok"><b>${c.ok}</b><span>OK</span></button>
+    <button class="cnt fejl" data-go="${base}fejl"><b>${c.fejl}</b><span>Fejl</span></button>
+    <button class="cnt" data-go="${base}mangler"><b>${c.mangler}</b><span>Mangler</span></button></div>`;
+}
+const barHtml = (c) => `<div class="bar"><i class="g" style="width:${c.n ? (100 * c.ok / c.n) : 0}%"></i><i class="r" style="width:${c.n ? (100 * c.fejl / c.n) : 0}%"></i></div>`;
+function viewHome() {
+  head("Termostat-tjek", "Område D · badekabiner", false);
+  const c = count(UNITS);
+  $("#main").innerHTML = `
+    <div class="sync" id="syncLine"></div>
+    <div class="card">
+      <b>${c.ok + c.fejl} af ${c.n} boliger tjekket</b>${barHtml(c)}
+      ${countsHtml(c, "liste/")}
+    </div>
+    <h2>Opgange</h2>
+    <div class="grid">${OPGANGE.map((o) => {
+      const k = count(UNITS.filter((u) => u.o === o));
+      return `<button class="tile ${k.mangler === 0 ? "done" : ""}" data-go="o/${o}"><b>${o}</b>
+        <span class="sub">${k.ok + k.fejl} af ${k.n} tjekket${k.fejl ? ` · ${k.fejl} fejl` : ""}</span>${barHtml(k)}</button>`;
+    }).join("")}</div>
+    <h2>Lister og rapport</h2>
+    <div class="btnrow"><button class="btn" data-go="liste/ok">OK-liste</button><button class="btn" data-go="liste/fejl">Fejl-liste</button></div>
+    <div class="btnrow"><button class="btn primary" data-go="rapport">Rapport</button></div>
+    <p class="muted small">Opgave i hver bolig: omfortråd termostaten i badekabinen, test at den tænder og slukker, og sørg for at telestaten står på auto, når I går. En bolig er først OK, når både termostat og telestat er krydset af.
+    Boligernes numre er foreslåede ud fra tegningen – tryk <b>Ret navn</b> for at skrive det rigtige bolignummer.</p>
+    <p class="muted small">Logget på som ${esc(MY_NAME)}. <button class="ulink" id="btnLogout">${SESSION ? "Skift navn / log af" : "Forbind til holdet"}</button></p>`;
+  updateSync();
+  $("#btnLogout").onclick = () => { SESSION = null; LOCAL_ONLY = false; store.set("session", null); store.set("local", false); render(); };
+}
+function unitHtml(u) {
+  const r = rec(u.id), st = status(u.id);
+  const fejl = r.s === "fejl";
+  return `<div class="unit ${st}" data-id="${u.id}">
+    <div class="uhead"><div class="uname">${esc(uname(u))}</div><button class="ulink" data-act="name">Ret navn</button></div>
+    <div class="utype">${esc(u.kind)} · ${esc(u.type)} · tegn. side ${u.side}</div>
+    <div class="two">
+      <button class="pick ok ${r.s === "ok" ? "on" : ""}" data-act="ok">✓ Termostat OK</button>
+      <button class="pick fejl ${fejl ? "on" : ""}" data-act="fejl">✗ Ikke OK</button>
+    </div>
+    ${fejl ? `<div class="sub2"><div class="lbl">Hvilken termostat sidder der?</div>
+      <div class="two"><button class="pick t ${r.t === "neotherm" ? "on" : ""}" data-act="neotherm">Neotherm</button>
+      <button class="pick t ${r.t === "noname" ? "on" : ""}" data-act="noname">NoName</button></div>
+      ${r.t ? "" : `<div class="warn">Vælg Neotherm eller NoName</div>`}</div>` : ""}
+    <label class="check tele ${r.ts ? "on" : ""}"><input type="checkbox" data-act="tele" ${r.ts ? "checked" : ""}> Telestat står på auto</label>
+    ${st === "" && (r.s === "ok") !== !!r.ts ? `<div class="warn">${r.s === "ok" ? "Mangler: telestat på auto" : "Mangler: test af termostat"}</div>` : ""}
+    <label class="check"><input type="checkbox" data-act="anden" ${r.a ? "checked" : ""}> Anden fejl</label>
+    ${r.a ? `<textarea data-act="note" placeholder="Beskriv fejlen">${esc(r.n || "")}</textarea>` : ""}
+    ${r.at && (r.s || r.a || r.ts) ? `<div class="umeta"><span>${esc(r.by || "")} · ${fmtAt(r.at)}</span><button class="ulink" data-act="reset">Nulstil</button></div>` : ""}
+  </div>`;
+}
+function viewOpgang(o, filter) {
+  const all = UNITS.filter((u) => u.o === o), c = count(all);
+  head(o, `${c.ok + c.fejl} af ${c.n} tjekket`, true);
+  const show = all.filter((u) => filter === "alle" || (status(u.id) || "mangler") === filter);
+  let html = `<div class="chips">${[["alle", `Alle ${c.n}`], ["mangler", `Mangler ${c.mangler}`], ["fejl", `Fejl ${c.fejl}`], ["ok", `OK ${c.ok}`]]
+    .map(([k, t]) => `<button class="chip ${filter === k ? "on" : ""}" data-go="o/${o}/${k}">${t}</button>`).join("")}</div>`;
+  if (!show.length) html += `<p class="muted">Ingen boliger her.</p>`;
+  FLOORS.forEach((f, fi) => {
+    const us = show.filter((u) => u.fi === fi);
+    if (us.length) html += `<h2>${f}</h2>` + us.map(unitHtml).join("");
+  });
+  $("#main").innerHTML = html;
+}
+function rowsFor(which) { return UNITS.filter((u) => (status(u.id) || "mangler") === which); }
+function tableHtml(which, list) {
+  if (!list.length) return `<p class="muted">Ingen boliger på denne liste.</p>`;
+  const f = which === "fejl", m = which === "mangler";
+  return `<div class="tblwrap"><table><thead><tr><th>Opgang</th><th>Etage</th><th>Bolig</th>${f ? "<th>Termostat</th><th>Type</th><th>Telestat</th><th>Anden fejl</th>" : ""}${m ? "<th>Boligtype</th><th>Mangler</th>" : "<th>Tjekket af</th><th>Dato</th>"}</tr></thead><tbody>${
+    list.map((u) => { const r = rec(u.id); return `<tr><td>${u.o}</td><td>${FLOORS[u.fi]}</td><td>${esc(uname(u))}</td>${
+      f ? `<td>${r.s === "fejl" ? "Ikke OK" : r.s === "ok" ? "OK" : "Ikke testet"}</td><td>${esc(termLabel(r))}</td><td>${r.ts ? "Auto" : "Ikke tjekket"}</td><td>${r.a ? esc(r.n || "Ja (ingen note)") : ""}</td>` : ""}${
+      m ? `<td>${esc(u.type)}</td><td>${r.s === "ok" ? "Telestat på auto" : r.ts ? "Test af termostat" : "Termostat og telestat"}</td>` : `<td>${esc(r.by || "")}</td><td>${fmtAt(r.at)}</td>`}</tr>`; }).join("")}</tbody></table></div>`;
+}
+const LNAME = { ok: "OK-liste", fejl: "Fejl-liste", mangler: "Mangler at blive tjekket" };
+function viewListe(which) {
+  if (!LNAME[which]) which = "fejl";
+  const list = rowsFor(which);
+  head(LNAME[which], `${list.length} boliger`, true);
+  $("#main").innerHTML = `<div class="chips noprint">${["ok", "fejl", "mangler"].map((k) => `<button class="chip ${which === k ? "on" : ""}" data-go="liste/${k}">${k === "ok" ? "OK" : k === "fejl" ? "Fejl" : "Mangler"} ${rowsFor(k).length}</button>`).join("")}</div>
+    ${OPGANGE.map((o) => { const l = list.filter((u) => u.o === o); return l.length ? `<h2>${o} <span class="muted small">(${l.length})</span></h2>${tableHtml(which, l)}` : ""; }).join("") || `<p class="muted">Ingen boliger på denne liste.</p>`}
+    <div class="btnrow noprint"><button class="btn" data-go="rapport">Rapport</button></div>`;
+}
+function viewRapport() {
+  head("Rapport", "Termostat-tjek område D", true);
+  const c = count(UNITS), ok = rowsFor("ok"), fejl = rowsFor("fejl"), mangler = rowsFor("mangler");
+  const neo = fejl.filter((u) => rec(u.id).s === "fejl" && rec(u.id).t === "neotherm").length;
+  const non = fejl.filter((u) => rec(u.id).s === "fejl" && rec(u.id).t === "noname").length;
+  const anden = fejl.filter((u) => rec(u.id).a).length;
+  $("#main").innerHTML = `
+    <div class="btnrow noprint"><button class="btn primary" id="btnPrint">Udskriv / gem som PDF</button></div>
+    <div class="btnrow noprint"><button class="btn small" id="btnCsv">Hent som Excel-fil (CSV)</button><button class="btn small" id="btnCopy">Kopiér som tekst</button></div>
+    <div class="rhead"><h1 style="font-size:18pt;margin:0 0 4px">Termostat i badekabiner – område D</h1>
+      <div>Omfortrådning og funktionstest af termostat (tænder/slukker) samt kontrol af, at telestaten står på auto. Udskrevet ${fmtAt(new Date().toISOString())}.</div></div>
+    <div class="card"><b>Status:</b> ${c.ok} OK · ${c.fejl} med fejl · ${c.mangler} mangler · ${c.n} boliger i alt<br>
+      <span class="small">Termostat ikke OK: ${neo} Neotherm · ${non} NoName. Anden fejl: ${anden}.</span></div>
+    <div class="tblwrap"><table><thead><tr><th>Opgang</th><th>Boliger</th><th>OK</th><th>Fejl</th><th>Mangler</th></tr></thead><tbody>${
+      OPGANGE.map((o) => { const k = count(UNITS.filter((u) => u.o === o)); return `<tr><td>${o}</td><td>${k.n}</td><td>${k.ok}</td><td>${k.fejl}</td><td>${k.mangler}</td></tr>`; }).join("")}</tbody></table></div>
+    <h2>Fejl-liste (${fejl.length})</h2>${tableHtml("fejl", fejl)}
+    <h2>OK-liste (${ok.length})</h2>${tableHtml("ok", ok)}
+    ${mangler.length ? `<h2>Mangler at blive tjekket (${mangler.length})</h2>${tableHtml("mangler", mangler)}` : ""}`;
+  $("#btnPrint").onclick = () => { try { window.print(); } catch (e) { toast("Udskrift virker ikke her"); } };
+  $("#btnCsv").onclick = () => download("termostat-omraade-D.csv", "﻿" + csv(), "text/csv;charset=utf-8");
+  $("#btnCopy").onclick = async () => { try { await navigator.clipboard.writeText(textReport()); toast("Kopieret"); } catch (e) { toast("Kunne ikke kopiere"); } };
+}
+function csv() {
+  const q = (s) => `"${String(s == null ? "" : s).replace(/"/g, '""').replace(/\r?\n/g, " ")}"`;
+  const head = ["Liste", "Opgang", "Etage", "Bolig", "Boligtype", "Termostat", "Termostattype", "Telestat på auto", "Anden fejl", "Note", "Tjekket af", "Tidspunkt"];
+  const rows = UNITS.map((u) => { const r = rec(u.id), s = status(u.id);
+    return [s === "ok" ? "OK" : s === "fejl" ? "Fejl" : "Mangler", u.o, FLOORS[u.fi], uname(u), u.type,
+      r.s === "ok" ? "OK" : r.s === "fejl" ? "Ikke OK" : "", termLabel(r), r.ts ? "Ja" : "", r.a ? "Ja" : "", r.a ? r.n || "" : "", r.at ? r.by || "" : "", r.at ? fmtAt(r.at) : ""]; });
+  return [head, ...rows].map((r) => r.map(q).join(";")).join("\r\n");
+}
+function textReport() {
+  const line = (u) => { const r = rec(u.id); const bits = [];
+    if (r.s === "fejl") bits.push("termostat ikke OK (" + termLabel(r) + ")");
+    if (r.a) bits.push("anden fejl: " + (r.n || "ingen note"));
+    if (status(u.id) === "fejl" && !r.ts) bits.push("telestat ikke tjekket");
+    if (status(u.id) === "" && r.s === "ok") bits.push("mangler telestat på auto");
+    if (status(u.id) === "" && r.ts) bits.push("mangler test af termostat");
+    return `${u.o} ${uname(u)}${bits.length ? " – " + bits.join("; ") : ""}`; };
+  const c = count(UNITS);
+  return `Termostat i badekabiner – område D\n${c.ok} OK · ${c.fejl} fejl · ${c.mangler} mangler (${c.n} boliger)\n\nFEJL:\n${rowsFor("fejl").map(line).join("\n") || "-"}\n\nOK:\n${rowsFor("ok").map(line).join("\n") || "-"}\n\nMANGLER:\n${rowsFor("mangler").map(line).join("\n") || "-"}\n`;
+}
+function download(name, text, mime) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: mime })); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function nameDialog(u) {
+  $("#dbox").innerHTML = `<h3>Ret navn – ${esc(u.o)} ${esc(FLOORS[u.fi])}</h3>
+    <p class="muted small">Foreslået: ${esc(u.n)} (${esc(u.type)})</p>
+    <input type="text" id="inNm" value="${esc(uname(u))}" maxlength="40">
+    <div class="btnrow"><button class="btn small" id="dCancel">Annullér</button><button class="btn small primary" id="dSave">Gem</button></div>`;
+  $("#dialog").hidden = false; $("#inNm").focus(); $("#inNm").select();
+  const close = () => { $("#dialog").hidden = true; render(true); };
+  $("#dCancel").onclick = close;
+  $("#dSave").onclick = () => { const v = $("#inNm").value.trim(); change(u.id, { nm: v && v !== u.n ? v : "" }); close(); };
+}
+
+/* ---------- Tryk og indtastning ---------- */
+document.addEventListener("click", (e) => {
+  const g = e.target.closest("[data-go]"); if (g) { go(g.dataset.go); return; }
+  const b = e.target.closest("[data-act]"); if (!b || b.tagName === "TEXTAREA") return;
+  const card = b.closest(".unit"); if (!card) return;
+  const id = card.dataset.id, u = UNIT.get(id), r = rec(id), act = b.dataset.act;
+  if (act === "name") { nameDialog(u); return; }
+  if (act === "ok") change(id, r.s === "ok" ? { s: "" } : { s: "ok", t: "" });
+  else if (act === "fejl") change(id, r.s === "fejl" ? { s: "", t: "" } : { s: "fejl" });
+  else if (act === "neotherm" || act === "noname") change(id, { t: r.t === act ? "" : act });
+  else if (act === "anden") change(id, { a: b.checked });
+  else if (act === "tele") change(id, { ts: b.checked });
+  else if (act === "reset") change(id, { s: "", t: "", ts: false, a: false, n: "" });
+  else return;
+  // Opdatér kun det ene kort, så siden ikke hopper
+  const tmp = document.createElement("div"); tmp.innerHTML = unitHtml(u); card.replaceWith(tmp.firstElementChild);
+  if (act === "anden" && b.checked) { const ta = document.querySelector(`.unit[data-id="${id}"] textarea`); if (ta) ta.focus(); }
+  const c = count(UNITS.filter((x) => x.o === u.o)); $("#subtitle").textContent = `${c.ok + c.fejl} af ${c.n} tjekket`;
+});
+let noteT;
+document.addEventListener("input", (e) => {
+  if (e.target.dataset.act !== "note") return;
+  const id = e.target.closest(".unit").dataset.id, v = e.target.value;
+  clearTimeout(noteT); noteT = setTimeout(() => change(id, { n: v }), 400);
+});
+document.addEventListener("focusout", (e) => {
+  if (e.target.dataset && e.target.dataset.act === "note") { clearTimeout(noteT); const id = e.target.closest(".unit").dataset.id; if ((rec(id).n || "") !== e.target.value) change(id, { n: e.target.value }); }
+  if (pendingRender) setTimeout(() => { if (pendingRender && $("#dialog").hidden) { pendingRender = false; render(true); } }, 400);
+});
+$("#btnBack").onclick = () => { go("hjem"); };
+$("#btnMenu").onclick = () => go("liste/fejl");
+window.addEventListener("hashchange", () => { render(); window.scrollTo(0, 0); });
+window.addEventListener("online", () => syncSoon(400));
+window.addEventListener("offline", updateSync);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") syncSoon(300); });
+setInterval(() => { if (document.visibilityState === "visible") syncNow(); }, 30000);
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+render(); syncNow();
+</script>
+</body>
+</html>
