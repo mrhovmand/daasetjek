@@ -140,7 +140,7 @@ function kind(code){
 }
 const UNITS = [];
 for (const o of OPGANGE) PLAN[o].forEach((arr, fi) => arr.forEach((side, i) => {
-  UNITS.push({ id: `${o}-${fi}-${i + 1}`, o, fi, n: `${FSHORT[fi]} nr. ${i + 1}`, type: TYPE[side], side, kind: kind(TYPE[side]) });
+  UNITS.push({ id: `${o}-${fi}-${i + 1}`, o, fi, n: arr.length === 2 && o.startsWith("D1") ? `${FSHORT[fi]} ${i ? "th." : "tv."}` : `${fi ? fi : "st"}.${i + 1}`, type: TYPE[side], side, kind: kind(TYPE[side]) });
 }));
 const UNIT = new Map(UNITS.map((u) => [u.id, u]));
 
@@ -342,7 +342,7 @@ function viewHome() {
     <div class="btnrow"><button class="btn" data-go="liste/ok">OK-liste</button><button class="btn" data-go="liste/fejl">Fejl-liste</button></div>
     <div class="btnrow"><button class="btn primary" data-go="rapport">Rapport</button></div>
     <p class="muted small">Opgave i hver bolig: omfortråd termostaten i badekabinen, test at den tænder og slukker, og sørg for at telestaten står på auto, når I går. En bolig er først OK, når både termostat og telestat er krydset af.
-    Boligernes numre er foreslåede ud fra tegningen – tryk <b>Ret navn</b> for at skrive det rigtige bolignummer.</p>
+    Boligernes navne (tv./th. og numre) er foreslåede ud fra tegningen – tryk <b>Ret navn</b>, hvis de er byttet om.</p>
     <p class="muted small">Logget på som ${esc(MY_NAME)}. <button class="ulink" id="btnLogout">${SESSION ? "Skift navn / log af" : "Forbind til holdet"}</button></p>`;
   updateSync();
   $("#btnLogout").onclick = () => { SESSION = null; LOCAL_ONLY = false; store.set("session", null); store.set("local", false); render(); };
