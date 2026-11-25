@@ -129,7 +129,7 @@ label.f{display:block;font-weight:700;margin:10px 0 4px}
 /* Termostat-tjek område D – midlertidig app til omfortrådning og funktionstest af termostat i badekabiner.
  * Deler data med holdet via samme Supabase-projekt og samme fælles kode som Stejlepladsen-appen.
  * Alle rækker ligger i tabellen "meta" med nøgler, der starter med "termD:" – de kan slettes samlet, når arbejdet er afleveret. */
-const APP_VERSION = "1.4";   // skal være det samme tal som i version.json – ret begge ved hver ny version
+const APP_VERSION = "1.5";   // skal være det samme tal som i version.json – ret begge ved hver ny version
 const CFG = {
   url: "https://zaktjknwboubewatrhlj.supabase.co",
   key: "sb_publishable_0cosreRI4xExKF1ZPzbhMg_tSB4Uozw",
@@ -507,7 +507,7 @@ document.addEventListener("change", async (e) => {
   const k = e.target.dataset && e.target.dataset.ksfile; if (!k || !e.target.files[0]) return;
   const id = e.target.closest("[data-ks]").dataset.ks;
   try { const blob = await shrink(e.target.files[0]); const v = new Date().toISOString();
-    await ksPut(id + "-" + k, { blob, v, up: false }); change(id, { [k]: v }); render(true);
+    await ksPut(id + "-" + k, { blob, v, up: false }); ksFlushTxt(); change(id, { [k]: v }); render(true);
   } catch (err) { toast(err.message || "Kunne ikke gemme billedet"); }
 });
 document.addEventListener("click", (e) => {
@@ -520,9 +520,13 @@ document.addEventListener("click", (e) => {
   $("#dbox").innerHTML = `<h3>Slet billedet "${KS_CAP[k]}"?</h3><div class="btnrow"><button class="btn small" id="dCancel">Nej</button><button class="btn small primary" id="dSave">Slet</button></div>`;
   $("#dialog").hidden = false;
   $("#dCancel").onclick = () => { $("#dialog").hidden = true; };
-  $("#dSave").onclick = () => { change(id, { [k]: "" }); $("#dialog").hidden = true; render(true); };
+  $("#dSave").onclick = () => { ksFlushTxt(); change(id, { [k]: "" }); $("#dialog").hidden = true; render(true); };
 });
 let ksT;
+function ksFlushTxt() {          // gem det, der er skrevet i boligfelterne, før siden tegnes igen
+  clearTimeout(ksT);
+  document.querySelectorAll('input[data-act="kstxt"]').forEach((el) => { const id = el.closest("[data-ks]").dataset.ks; if ((rec(id).txt || "") !== el.value) change(id, { txt: el.value }); });
+}
 document.addEventListener("input", (e) => {
   if (e.target.dataset.act !== "kstxt") return;
   const id = e.target.closest("[data-ks]").dataset.ks, v = e.target.value;
