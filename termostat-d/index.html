@@ -123,24 +123,25 @@ const TYPE = {11:"KOR_1V_HC",12:"KOR_1V_T01",13:"KOR_1V_T01_S",14:"KOR_SSB_T01",
   42:"OPG_4V_T03",43:"OPG_4V_T03_S",45:"OPG_4V_T05",47:"OPG_4V_T06",50:"OPG_4V-T_T05",51:"OPG_4V-T_T05_S",52:"OPG_4V-T_T06",
   53:"OPG_4V-T_T07",77:"OPG_4V_T03_S A",78:"OPG_4V_T03 A",79:"OPG_4V_T05 A",81:"OPG_4V-T_T05 A",82:"OPG_4V-T_T05_S A",
   83:"ALT_2V_T01 D",84:"ALT_2V_T01_S A",86:"ALT_2V_T01_S C",87:"KOR_1V_T03",88:"KOR_SSB_T01 A",89:"KOR_1V_T04",
-  98:"OPG_2V_T03_S A",99:"ALT_2V_T01_S B"};
+  98:"OPG_2V_T03_S A",99:"ALT_2V_T01_S B",92:"Vaskeri L1D4.44"};
 // Pr. opgang: én liste pr. etage (stue først) med tegningsside for hver bolig
 const PLAN = {
   "D1-A": [[78,43],[45,43],[45,43],[45,43],[45,43],[50,51]],
   "D1-B": [[42,77],[79,77],[79,77],[79,77],[81,82]],
   "D2":   [[84,84,84,83,83,83],[86,86,86,99,99,99],[86,86,86,99,99,99],[86,86,86,99,99,99],[86,86,86,99,99,99],[86,86]],
-  "D4":   [[12,12,12,14,88,13],[11,12,12,12,12,87,14,88,13],[11,12,12,12,12,87,14,88,13],[89,12,12,12,12,87,14,88,13],[89,12,12,12,12]],
+  "D4":   [[12,12,12,14,88,13,92],[11,12,12,12,12,87,14,88,13],[11,12,12,12,12,87,14,88,13],[89,12,12,12,12,87,14,88,13],[89,12,12,12,12]],
   "D5":   [[],[18,19,47],[18,19,47],[98,19,47],[53,52]]
 };
 const OPGANGE = Object.keys(PLAN);
 function kind(code){
+  if (code.startsWith("Vaskeri")) return "Fællesrum";
   if (code.includes("HC")) return "HC-ungdomsbolig";
   if (code.startsWith("KOR")) return "Ungdomsbolig";
   const m = code.match(/_(\d)V/); return m ? m[1] + "-vær." : "Bolig";
 }
 const UNITS = [];
 for (const o of OPGANGE) PLAN[o].forEach((arr, fi) => arr.forEach((side, i) => {
-  UNITS.push({ id: `${o}-${fi}-${i + 1}`, o, fi, n: arr.length === 2 && o.startsWith("D1") ? `${FSHORT[fi]} ${i ? "th." : "tv."}` : `${fi ? fi : "st"}.${i + 1}`, type: TYPE[side], side, kind: kind(TYPE[side]) });
+  UNITS.push({ id: `${o}-${fi}-${i + 1}`, o, fi, n: side === 92 ? "Vaskeri" : arr.length === 2 && o.startsWith("D1") ? `${FSHORT[fi]} ${i ? "th." : "tv."}` : `${fi ? fi : "st"}.${i + 1}`, type: TYPE[side], side, kind: kind(TYPE[side]) });
 }));
 const UNIT = new Map(UNITS.map((u) => [u.id, u]));
 
