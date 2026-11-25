@@ -87,6 +87,16 @@ label.f{display:block;font-weight:700;margin:10px 0 4px}
 .err{color:var(--red);font-weight:600;margin-top:8px}
 #toast{position:fixed;left:50%;bottom:calc(24px + var(--safe-bottom));transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:12px;z-index:60;font-size:16px;max-width:90%}
 .rhead{display:none}
+.kspair{display:flex;gap:10px;margin-top:10px}
+.ksbox{flex:1;min-width:0}
+.ksbox .cap{font-weight:700;font-size:15px;margin-bottom:4px}
+.ksimg{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:4/3;border:2px dashed var(--line);border-radius:12px;background:#f6f8fb;color:var(--blue);font-weight:700;font-size:17px;overflow:hidden;cursor:pointer;text-align:center;padding:0}
+.ksimg.has{border-style:solid;background:#000}
+.ksimg img{width:100%;height:100%;object-fit:cover;display:block}
+.ksimg input,.kslinks input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.kslinks{display:flex;justify-content:space-between;font-size:15px}
+.kslinks label{color:var(--blue2);text-decoration:underline;padding:6px 0;cursor:pointer}
+#bigimg{max-width:100%;max-height:70vh;display:block;margin:0 auto 10px;border-radius:8px}
 @media print{
   #topwrap,.noprint,#toast{display:none!important}
   html,body{background:#fff;font-size:11pt}
@@ -95,6 +105,9 @@ label.f{display:block;font-weight:700;margin:10px 0 4px}
   h2{break-after:avoid}
   tr{break-inside:avoid}
   .tblwrap{overflow:visible}
+  .unit.ks{break-inside:avoid;border:1px solid #999;border-left-width:1px}
+  .ksimg{border:0;background:none;aspect-ratio:auto}.ksimg img{object-fit:contain;max-height:80mm}
+  .kslinks{display:none}
 }
 </style>
 </head>
@@ -116,13 +129,15 @@ label.f{display:block;font-weight:700;margin:10px 0 4px}
 /* Termostat-tjek område D – midlertidig app til omfortrådning og funktionstest af termostat i badekabiner.
  * Deler data med holdet via samme Supabase-projekt og samme fælles kode som Stejlepladsen-appen.
  * Alle rækker ligger i tabellen "meta" med nøgler, der starter med "termD:" – de kan slettes samlet, når arbejdet er afleveret. */
-const APP_VERSION = "1.3";   // skal være det samme tal som i version.json – ret begge ved hver ny version
+const APP_VERSION = "1.4";   // skal være det samme tal som i version.json – ret begge ved hver ny version
 const CFG = {
   url: "https://zaktjknwboubewatrhlj.supabase.co",
   key: "sb_publishable_0cosreRI4xExKF1ZPzbhMg_tSB4Uozw",
   email: "team@sp2-daasekontrol.dk",
-  prefix: "termD:"
+  prefix: "termD:",
+  photo: "termD-"          // KS-billeder ligger i den fælles billedmappe som termD-ks1-f.jpg (før) / -e.jpg (efter)
 };
+const KS_IDS = ["ks1", "ks2", "ks3", "ks4", "ks5"];
 
 /* ---------- Boliger (aflæst af Artelia ISP1_K07_L1XX_H04_EXX_N931 rev. E, oversigtsplaner side 3–8) ---------- */
 const FLOORS = ["Stue", "1. sal", "2. sal", "3. sal", "4. sal", "5. sal"];
@@ -218,6 +233,13 @@ async function syncNow() {
       for (const s of sent) if (rec(s.id).at === s.at) DIRTY.delete(s.id);   // ændret igen imens? så sendes den næste gang
       saveData();
     }
+    // 1b. KS-billeder op
+    for (const id of KS_IDS) for (const k of ["f", "e"]) {
+      const p = await ksGet(id + "-" + k).catch(() => null);
+      if (!p || p.up || rec(id)[k] !== p.v) continue;
+      await api(`/storage/v1/object/photos/${CFG.photo}${id}-${k}.jpg`, { method: "POST", headers: { "Content-Type": "image/jpeg", "x-upsert": "true" }, body: p.blob });
+      await ksPut(id + "-" + k, { ...p, up: true });
+    }
     // 2. De andres ændringer ned (2 min overlap)
     const cur = store.get("cursor", null);
     const since = cur ? new Date(parseTs(cur).getTime() - 120000).toISOString() : "1970-01-01T00:00:00Z";
@@ -228,7 +250,7 @@ async function syncNow() {
       for (const row of rows) {
         if (!max || parseTs(row.updated_at) > parseTs(max)) max = row.updated_at;
         const id = row.key.slice(CFG.prefix.length);
-        if (!UNIT.has(id) || row.deleted || !row.value) continue;
+        if ((!UNIT.has(id) && !KS_IDS.includes(id)) || row.deleted || !row.value) continue;
         const loc = rec(id), rem = row.value;
         if (DIRTY.has(id) && (loc.at || "") >= (rem.at || "")) continue;      // min egen er nyere
         if (JSON.stringify(loc) !== JSON.stringify(rem)) { DATA[id] = rem; DIRTY.delete(id); changed = true; }
@@ -282,6 +304,7 @@ function render(keepScroll) {
   if (p[0] === "o" && PLAN[p[1]]) viewOpgang(p[1], p[2] || "alle");
   else if (p[0] === "liste") viewListe(p[1] || "fejl");
   else if (p[0] === "rapport") viewRapport();
+  else if (p[0] === "ks") viewKs();
   else viewHome();
   if (keepScroll) window.scrollTo(0, y);
 }
@@ -341,6 +364,7 @@ function viewHome() {
       <b>${c.ok + c.fejl} af ${c.n} boliger tjekket</b>${barHtml(c)}
       ${countsHtml(c, "liste/")}
     </div>
+    <button class="btn" data-go="ks" style="margin-bottom:4px">📷 Billeddokumentation (KS) · ${KS_IDS.filter((i) => rec(i).f).length} før · ${KS_IDS.filter((i) => rec(i).e).length} efter</button>
     <h2>Opgange</h2>
     <div class="grid">${OPGANGE.map((o) => {
       const k = count(UNITS.filter((u) => u.o === o));
@@ -430,6 +454,80 @@ function viewRapport() {
   $("#btnCsv").onclick = () => download("termostat-omraade-D.csv", "﻿" + csv(), "text/csv;charset=utf-8");
   $("#btnCopy").onclick = async () => { try { await navigator.clipboard.writeText(textReport()); toast("Kopieret"); } catch (e) { toast("Kunne ikke kopiere"); } };
 }
+/* ---------- Billeddokumentation (KS): 5 steder med billede før og efter ---------- */
+let ksDbP;
+function ksDb() { return ksDbP || (ksDbP = new Promise((res, rej) => { const r = indexedDB.open("termD-ks", 1); r.onupgradeneeded = () => r.result.createObjectStore("p"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); })); }
+async function ksPut(k, v) { const d = await ksDb(); return new Promise((res, rej) => { const t = d.transaction("p", "readwrite"); t.objectStore("p").put(v, k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); }
+async function ksGet(k) { const d = await ksDb(); return new Promise((res, rej) => { const q = d.transaction("p").objectStore("p").get(k); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); }); }
+function shrink(file) {          // skalér ned til højst 1600 px og gem som JPEG
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      c.toBlob((b) => (b ? res(b) : rej(new Error("Kunne ikke læse billedet"))), "image/jpeg", 0.8); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("Kunne ikke læse billedet")); };
+    img.src = url;
+  });
+}
+async function ksBlob(id, k) {   // lokalt billede, ellers hentes det fra holdet
+  const v = rec(id)[k]; if (!v) return null;
+  let p = await ksGet(id + "-" + k).catch(() => null);
+  if (p && p.v === v) return p.blob;
+  if (!SESSION || !navigator.onLine) return null;
+  try { const r = await api(`/storage/v1/object/authenticated/photos/${CFG.photo}${id}-${k}.jpg`, { cache: "no-store" });
+    const blob = await r.blob(); await ksPut(id + "-" + k, { blob, v, up: true }); return blob; } catch (e) { return null; }
+}
+let ksUrls = [];
+const KS_CAP = { f: "Før", e: "Efter" };
+function viewKs() {
+  head("Billeddokumentation", "KS · 5 steder, før og efter", true);
+  ksUrls.forEach((u) => URL.revokeObjectURL(u)); ksUrls = [];
+  $("#main").innerHTML = `
+    <div class="rhead"><h1 style="font-size:18pt;margin:0 0 4px">Billeddokumentation (KS) – termostat i badekabiner, område D</h1><div>Stikprøve: billede før og efter omfortrådning. Udskrevet ${fmtAt(new Date().toISOString())}.</div></div>
+    <p class="muted small noprint">Stikprøve til kunden: fem steder i alt, som du selv vælger. Tag et billede før I retter og et efter.</p>
+    ${KS_IDS.map((id, i) => { const r = rec(id); return `<div class="unit ks" data-ks="${id}">
+      <div class="uname">Sted ${i + 1}</div>
+      <input type="text" data-act="kstxt" placeholder="Hvilken bolig? Fx D4 2.3" value="${esc(r.txt || "")}" maxlength="60" style="margin-top:6px">
+      <div class="kspair">${["f", "e"].map((k) => `<div class="ksbox"><div class="cap">${KS_CAP[k]}</div>
+        ${r[k] ? `<button class="ksimg has" data-ksbig="${k}"><span class="muted small" style="color:#fff">Henter …</span></button>
+          <div class="kslinks"><label>Nyt billede<input type="file" accept="image/*" data-ksfile="${k}"></label><label data-ksdel="${k}">Slet</label></div>`
+        : `<label class="ksimg">＋ Billede ${KS_CAP[k].toLowerCase()}<input type="file" accept="image/*" data-ksfile="${k}"></label>`}</div>`).join("")}</div>
+      ${r.at && (r.f || r.e || r.txt) ? `<div class="umeta"><span>${esc(r.by || "")} · ${fmtAt(r.at)}</span></div>` : ""}
+    </div>`; }).join("")}
+    <div class="btnrow noprint"><button class="btn" id="btnKsPrint">Udskriv / gem som PDF</button></div>`;
+  $("#btnKsPrint").onclick = () => { try { window.print(); } catch (e) { toast("Udskrift virker ikke her"); } };
+  for (const id of KS_IDS) for (const k of ["f", "e"]) if (rec(id)[k]) ksBlob(id, k).then((b) => {
+    const el = document.querySelector(`[data-ks="${id}"] [data-ksbig="${k}"]`); if (!el) return;
+    if (!b) { el.firstElementChild.textContent = "Billedet er ikke hentet endnu"; return; }
+    const u = URL.createObjectURL(b); ksUrls.push(u); el.innerHTML = `<img alt="${KS_CAP[k]}" src="${u}">`;
+  });
+}
+document.addEventListener("change", async (e) => {
+  const k = e.target.dataset && e.target.dataset.ksfile; if (!k || !e.target.files[0]) return;
+  const id = e.target.closest("[data-ks]").dataset.ks;
+  try { const blob = await shrink(e.target.files[0]); const v = new Date().toISOString();
+    await ksPut(id + "-" + k, { blob, v, up: false }); change(id, { [k]: v }); render(true);
+  } catch (err) { toast(err.message || "Kunne ikke gemme billedet"); }
+});
+document.addEventListener("click", (e) => {
+  const d = e.target.closest("[data-ksdel]"), b = e.target.closest("[data-ksbig]");
+  if (!d && !b) return;
+  const id = (d || b).closest("[data-ks]").dataset.ks, k = d ? d.dataset.ksdel : b.dataset.ksbig;
+  if (b) { const img = b.querySelector("img"); if (!img) return;
+    $("#dbox").innerHTML = `<img id="bigimg" alt="" src="${img.src}"><div class="btnrow"><button class="btn small" id="dCancel">Luk</button></div>`;
+    $("#dialog").hidden = false; $("#dCancel").onclick = () => { $("#dialog").hidden = true; }; return; }
+  $("#dbox").innerHTML = `<h3>Slet billedet "${KS_CAP[k]}"?</h3><div class="btnrow"><button class="btn small" id="dCancel">Nej</button><button class="btn small primary" id="dSave">Slet</button></div>`;
+  $("#dialog").hidden = false;
+  $("#dCancel").onclick = () => { $("#dialog").hidden = true; };
+  $("#dSave").onclick = () => { change(id, { [k]: "" }); $("#dialog").hidden = true; render(true); };
+});
+let ksT;
+document.addEventListener("input", (e) => {
+  if (e.target.dataset.act !== "kstxt") return;
+  const id = e.target.closest("[data-ks]").dataset.ks, v = e.target.value;
+  clearTimeout(ksT); ksT = setTimeout(() => change(id, { txt: v }), 500);
+});
 function csv() {
   const q = (s) => `"${String(s == null ? "" : s).replace(/"/g, '""').replace(/\r?\n/g, " ")}"`;
   const head = ["Liste", "Opgang", "Etage", "Bolig", "Boligtype", "Termostat", "Termostattype", "Telestat på auto", "Anden fejl", "Note", "Tjekket af", "Tidspunkt"];
