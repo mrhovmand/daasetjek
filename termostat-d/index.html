@@ -129,7 +129,7 @@ label.f{display:block;font-weight:700;margin:10px 0 4px}
 /* Termostat-tjek område D – midlertidig app til omfortrådning og funktionstest af termostat i badekabiner.
  * Deler data med holdet via samme Supabase-projekt og samme fælles kode som Stejlepladsen-appen.
  * Alle rækker ligger i tabellen "meta" med nøgler, der starter med "termD:" – de kan slettes samlet, når arbejdet er afleveret. */
-const APP_VERSION = "1.5";   // skal være det samme tal som i version.json – ret begge ved hver ny version
+const APP_VERSION = "1.6";   // skal være det samme tal som i version.json – ret begge ved hver ny version
 const CFG = {
   url: "https://zaktjknwboubewatrhlj.supabase.co",
   key: "sb_publishable_0cosreRI4xExKF1ZPzbhMg_tSB4Uozw",
@@ -174,7 +174,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem("termD." + k); return v === null ? (k in mem ? mem[k] : d) : JSON.parse(v); } catch (e) { return k in mem ? mem[k] : d; } },
   set(k, v) { mem[k] = v; try { localStorage.setItem("termD." + k, JSON.stringify(v)); } catch (e) {} }
 };
-let DATA = store.get("data", {});          // id -> {s,t,ts,a,n,nm,by,at}
+let DATA = store.get("data", {});          // id -> {s,t,ts,a,n,u,ut,nm,by,at}
 let DIRTY = new Set(store.get("dirty", []));
 let SESSION = store.get("session", null);
 let MY_NAME = store.get("name", "");
@@ -185,9 +185,12 @@ const saveData = () => { store.set("data", DATA); store.set("dirty", [...DIRTY])
 
 function status(id) {            // "ok" | "fejl" | "" (mangler)
   const r = rec(id);
-  if (r.s === "fejl" || r.a) return "fejl";
-  return r.s === "ok" && r.ts ? "ok" : "";      // OK kræver både termostat OK og telestat på auto
+  if ((r.s === "fejl" || r.a) && !r.u) return "fejl";
+  return termOk(r) && r.ts ? "ok" : "";         // OK kræver både termostat OK (eller fejl udbedret) og telestat på auto
 }
+const fixed = (r) => !!r.u && (r.s === "fejl" || !!r.a);                    // fejl fundet og udbedret
+const termOk = (r) => r.s === "ok" || (r.s === "fejl" && !!r.u);
+const faultText = (r) => [r.s === "fejl" ? `Termostat ikke OK (${termLabel(r)})` : "", r.a ? `Anden fejl${r.n ? ": " + r.n : ""}` : ""].filter(Boolean).join("; ");
 function change(id, patch) {
   DATA[id] = { ...rec(id), ...patch, by: MY_NAME || "Ukendt", at: new Date().toISOString() };
   DIRTY.add(id); saveData(); syncSoon();
@@ -395,9 +398,11 @@ function unitHtml(u) {
       <button class="pick t ${r.t === "noname" ? "on" : ""}" data-act="noname">NoName</button></div>
       ${r.t ? "" : `<div class="warn">Vælg Neotherm eller NoName</div>`}</div>` : ""}
     <label class="check tele ${r.ts ? "on" : ""}"><input type="checkbox" data-act="tele" ${r.ts ? "checked" : ""}> Telestat står på auto</label>
-    ${st === "" && (r.s === "ok") !== !!r.ts ? `<div class="warn">${r.s === "ok" ? "Mangler: telestat på auto" : "Mangler: test af termostat"}</div>` : ""}
+    ${st === "" && termOk(r) !== !!r.ts ? `<div class="warn">${termOk(r) ? "Mangler: telestat på auto" : "Mangler: test af termostat"}</div>` : ""}
     <label class="check"><input type="checkbox" data-act="anden" ${r.a ? "checked" : ""}> Anden fejl</label>
     ${r.a ? `<textarea data-act="note" placeholder="Beskriv fejlen">${esc(r.n || "")}</textarea>` : ""}
+    ${r.s === "fejl" || r.a ? `<label class="check tele ${r.u ? "on" : ""}"><input type="checkbox" data-act="udb" ${r.u ? "checked" : ""}> Fejl udbedret</label>
+      ${r.u ? `<textarea data-act="utxt" placeholder="Hvad var fejlen?" style="margin-top:8px">${esc(r.ut || "")}</textarea>` : ""}` : ""}
     ${r.at && (r.s || r.a || r.ts) ? `<div class="umeta"><span>${esc(r.by || "")} · ${fmtAt(r.at)}</span><button class="ulink" data-act="reset">Nulstil</button></div>` : ""}
   </div>`;
 }
@@ -415,14 +420,22 @@ function viewOpgang(o, filter) {
   $("#main").innerHTML = html;
 }
 function rowsFor(which) { return UNITS.filter((u) => (status(u.id) || "mangler") === which); }
-function tableHtml(which, list) {
+function tableHtml(which, list, noDate) {
   if (!list.length) return `<p class="muted">Ingen boliger på denne liste.</p>`;
-  const f = which === "fejl", m = which === "mangler";
-  return `<div class="tblwrap"><table><thead><tr><th>Opgang</th><th>Etage</th><th>Bolig</th>${f ? "<th>Termostat</th><th>Type</th><th>Telestat</th><th>Anden fejl</th>" : ""}${m ? "<th>Boligtype</th><th>Mangler</th>" : "<th>Tjekket af</th><th>Dato</th>"}</tr></thead><tbody>${
-    list.map((u) => { const r = rec(u.id); return `<tr><td>${u.o}</td><td>${FLOORS[u.fi]}</td><td>${esc(uname(u))}</td>${
-      f ? `<td>${r.s === "fejl" ? "Ikke OK" : r.s === "ok" ? "OK" : "Ikke testet"}</td><td>${esc(termLabel(r))}</td><td>${r.ts ? "Auto" : "Ikke tjekket"}</td><td>${r.a ? esc(r.n || "Ja (ingen note)") : ""}</td>` : ""}${
-      m ? `<td>${esc(u.type)}</td><td>${r.s === "ok" ? "Telestat på auto" : r.ts ? "Test af termostat" : "Termostat og telestat"}</td>` : `<td>${esc(r.by || "")}</td><td>${fmtAt(r.at)}</td>`}</tr>`; }).join("")}</tbody></table></div>`;
+  const cols = TCOLS[which].filter((c) => !(noDate && c[0] === "Dato"));
+  return `<div class="tblwrap"><table><thead><tr>${cols.map((c) => `<th>${c[0]}</th>`).join("")}</tr></thead><tbody>${
+    list.map((u) => `<tr>${cols.map((c) => `<td>${esc(c[1](u, rec(u.id)))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
+const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString("da-DK", { day: "numeric", month: "numeric", year: "numeric" }) : "");
+const C_BASE = [["Opgang", (u) => u.o], ["Etage", (u) => FLOORS[u.fi]], ["Bolig", (u) => uname(u)]];
+const C_END = [["Tjekket af", (u, r) => r.by || ""], ["Dato", (u, r) => fmtAt(r.at)]];
+const TCOLS = {
+  fejl: [...C_BASE, ["Termostat", (u, r) => (r.s === "fejl" ? "Ikke OK" : r.s === "ok" ? "OK" : "Ikke testet")], ["Type", (u, r) => termLabel(r)],
+    ["Telestat", (u, r) => (r.ts ? "Auto" : "Ikke tjekket")], ["Anden fejl", (u, r) => (r.a ? r.n || "Ja (ingen note)" : "")], ...C_END],
+  udb: [...C_BASE, ["Fejl fundet", (u, r) => faultText(r)], ["Hvad var fejlen", (u, r) => r.ut || ""], ...C_END],
+  ok: [...C_BASE, ["Bemærkning", (u, r) => (fixed(r) ? "Fejl udbedret" : "")], ...C_END],
+  mangler: [...C_BASE, ["Boligtype", (u) => u.type], ["Mangler", (u, r) => (termOk(r) ? "Telestat på auto" : r.ts ? "Test af termostat" : "Termostat og telestat")]]
+};
 const LNAME = { ok: "OK-liste", fejl: "Fejl-liste", mangler: "Mangler at blive tjekket" };
 function viewListe(which) {
   if (!LNAME[which]) which = "fejl";
@@ -434,25 +447,108 @@ function viewListe(which) {
 }
 function viewRapport() {
   head("Rapport", "Termostat-tjek område D", true);
-  const c = count(UNITS), ok = rowsFor("ok"), fejl = rowsFor("fejl"), mangler = rowsFor("mangler");
-  const neo = fejl.filter((u) => rec(u.id).s === "fejl" && rec(u.id).t === "neotherm").length;
-  const non = fejl.filter((u) => rec(u.id).s === "fejl" && rec(u.id).t === "noname").length;
-  const anden = fejl.filter((u) => rec(u.id).a).length;
+  const c = count(UNITS), ok = rowsFor("ok"), fejl = rowsFor("fejl"), mangler = rowsFor("mangler"), udb = ok.filter((u) => fixed(rec(u.id)));
   $("#main").innerHTML = `
-    <div class="btnrow noprint"><button class="btn primary" id="btnPrint">Udskriv / gem som PDF</button></div>
-    <div class="btnrow noprint"><button class="btn small" id="btnCsv">Hent som Excel-fil (CSV)</button><button class="btn small" id="btnCopy">Kopiér som tekst</button></div>
-    <div class="rhead"><h1 style="font-size:18pt;margin:0 0 4px">Termostat i badekabiner – område D</h1>
-      <div>Omfortrådning og funktionstest af termostat (tænder/slukker) samt kontrol af, at telestaten står på auto. Udskrevet ${fmtAt(new Date().toISOString())}.</div></div>
-    <div class="card"><b>Status:</b> ${c.ok} OK · ${c.fejl} med fejl · ${c.mangler} mangler · ${c.n} boliger i alt<br>
-      <span class="small">Termostat ikke OK: ${neo} Neotherm · ${non} NoName. Anden fejl: ${anden}.</span></div>
+    <div class="btnrow"><button class="btn primary" id="btnPdf">Lav PDF-rapport</button></div>
+    <div class="btnrow"><button class="btn small" id="btnCsv">Excel-fil (CSV)</button><button class="btn small" id="btnCopy">Kopiér som tekst</button></div>
+    <div class="card"><b>Status:</b> ${esc(statusLine(c, udb.length))}<br><span class="small">${esc(faultLine(fejl))}</span></div>
     <div class="tblwrap"><table><thead><tr><th>Opgang</th><th>Boliger</th><th>OK</th><th>Fejl</th><th>Mangler</th></tr></thead><tbody>${
       OPGANGE.map((o) => { const k = count(UNITS.filter((u) => u.o === o)); return `<tr><td>${o}</td><td>${k.n}</td><td>${k.ok}</td><td>${k.fejl}</td><td>${k.mangler}</td></tr>`; }).join("")}</tbody></table></div>
-    <h2>Fejl-liste (${fejl.length})</h2>${tableHtml("fejl", fejl)}
-    <h2>OK-liste (${ok.length})</h2>${tableHtml("ok", ok)}
-    ${mangler.length ? `<h2>Mangler at blive tjekket (${mangler.length})</h2>${tableHtml("mangler", mangler)}` : ""}`;
-  $("#btnPrint").onclick = () => { try { window.print(); } catch (e) { toast("Udskrift virker ikke her"); } };
-  $("#btnCsv").onclick = () => download("termostat-omraade-D.csv", "﻿" + csv(), "text/csv;charset=utf-8");
+    <h2>Fejl-liste (${fejl.length})</h2>${tableHtml("fejl", fejl, true)}
+    ${udb.length ? `<h2>Udbedrede fejl (${udb.length})</h2>${tableHtml("udb", udb, true)}` : ""}
+    <h2>OK-liste (${ok.length})</h2>${tableHtml("ok", ok, true)}
+    ${mangler.length ? `<h2>Mangler at blive tjekket (${mangler.length})</h2>${tableHtml("mangler", mangler, true)}` : ""}`;
+  $("#btnPdf").onclick = () => busy($("#btnPdf"), "Laver PDF …", async () => deliver(await reportPdf(), "Termostat-tjek område D.pdf", "application/pdf"));
+  $("#btnCsv").onclick = () => deliver(new Blob(["\ufeff" + csv()], { type: "text/csv;charset=utf-8" }), "Termostat-tjek område D.csv", "text/csv");
   $("#btnCopy").onclick = async () => { try { await navigator.clipboard.writeText(textReport()); toast("Kopieret"); } catch (e) { toast("Kunne ikke kopiere"); } };
+}
+const statusLine = (c, nUdb) => `${c.ok} OK${nUdb ? ` (heraf ${nUdb} med udbedret fejl)` : ""} · ${c.fejl} med fejl · ${c.mangler} mangler · ${c.n} i alt`;
+function faultLine(fejl) {
+  const n = (f) => fejl.filter((u) => f(rec(u.id))).length;
+  return `Åbne fejl – termostat ikke OK: ${n((r) => r.s === "fejl" && r.t === "neotherm")} Neotherm · ${n((r) => r.s === "fejl" && r.t === "noname")} NoName. Anden fejl: ${n((r) => r.a)}.`;
+}
+
+/* ---------- PDF (laves på telefonen – udskrift virker ikke i en app på hjemmeskærmen) ---------- */
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error("PDF-værktøjet kunne ikke hentes. Prøv igen, når der er dækning.")); document.head.appendChild(s); }); }
+let pdfLibP;
+function pdfLib() { return pdfLibP || (pdfLibP = loadScript("jspdf.umd.min.js").then(() => loadScript("jspdf.plugin.autotable.min.js")).then(() => window.jspdf.jsPDF).catch((e) => { pdfLibP = null; throw e; })); }
+async function busy(btn, txt, fn) {
+  const old = btn.textContent; btn.disabled = true; btn.textContent = txt;
+  try { await fn(); } catch (e) { console.warn(e); toast(e.message || "Det lykkedes ikke"); }
+  btn.disabled = false; btn.textContent = old;
+}
+const pdfTxt = (t) => String(t == null ? "" : t).replace(/[\u2013\u2014]/g, "-").replace(/[^\x09\x0a\x20-\x7e\xa0-\xff]/g, "");
+function pdfFooter(doc) {
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(110);
+    doc.text(pdfTxt(`Stejlepladsen · område D · ${fmtDate(new Date().toISOString())}`), 14, 289); doc.text(`Side ${i} af ${n}`, 196, 289, { align: "right" }); }
+}
+async function reportPdf() {
+  const JsPDF = await pdfLib(), doc = new JsPDF({ unit: "mm", format: "a4" });
+  const c = count(UNITS), ok = rowsFor("ok"), fejl = rowsFor("fejl"), mangler = rowsFor("mangler"), udb = ok.filter((u) => fixed(rec(u.id)));
+  let y = 18;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(18, 53, 91); doc.text(pdfTxt("Termostat i badekabiner - område D"), 14, y); y += 7;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60);
+  for (const l of doc.splitTextToSize(pdfTxt("Stejlepladsen. Omfortrådning og funktionstest af termostat (tænder/slukker) samt kontrol af, at telestaten står på auto."), 182)) { doc.text(l, 14, y); y += 5; }
+  doc.setTextColor(0); doc.setFontSize(11); y += 2;
+  doc.text(pdfTxt("Status: " + statusLine(c, udb.length)), 14, y); y += 5.5;
+  doc.setFontSize(10); doc.text(pdfTxt(faultLine(fejl)), 14, y); y += 4;
+  const table = (title, head, body, color) => {
+    if (y > 262) { doc.addPage(); y = 16; }
+    if (title) { doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(0); doc.text(pdfTxt(title), 14, y + 6); y += 8; }
+    doc.autoTable({ startY: y, head: [head], body: body.map((r) => r.map(pdfTxt)), margin: { left: 14, right: 14, bottom: 16 }, theme: "grid",
+      styles: { font: "helvetica", fontSize: 9, cellPadding: 1.6, overflow: "linebreak", textColor: 20, lineColor: 190, lineWidth: 0.1 },
+      headStyles: { fillColor: color || [18, 53, 91], textColor: 255, fontStyle: "bold" }, rowPageBreak: "avoid" });
+    y = doc.lastAutoTable.finalY + 5;
+  };
+  const cols = (which) => TCOLS[which].filter((k) => k[0] !== "Dato");
+  const sect = (title, which, list, color) => table(`${title} (${list.length})`, cols(which).map((k) => k[0]), list.length ? list.map((u) => cols(which).map((k) => k[1](u, rec(u.id)))) : [["Ingen", ...cols(which).slice(1).map(() => "")]], color);
+  table("", ["Opgang", "I alt", "OK", "Fejl", "Mangler"], OPGANGE.map((o) => { const k = count(UNITS.filter((u) => u.o === o)); return [o, k.n, k.ok, k.fejl, k.mangler]; }));
+  sect("Fejl-liste", "fejl", fejl, [179, 0, 27]);
+  if (udb.length) sect("Udbedrede fejl", "udb", udb, [138, 75, 0]);
+  sect("OK-liste", "ok", ok, [11, 107, 47]);
+  if (mangler.length) sect("Mangler at blive tjekket", "mangler", mangler, [74, 85, 98]);
+  pdfFooter(doc);
+  return doc.output("blob");
+}
+const blobDataUrl = (b) => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = () => rej(f.error); f.readAsDataURL(b); });
+const imgSize = (url) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res([i.naturalWidth, i.naturalHeight]); i.onerror = () => rej(new Error("Et billede kunne ikke læses")); i.src = url; });
+async function ksPdf() {
+  const JsPDF = await pdfLib(), doc = new JsPDF({ unit: "mm", format: "a4" });
+  doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(18, 53, 91); doc.text(pdfTxt("Billeddokumentation (KS) - termostat i badekabiner, område D"), 14, 18);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60); doc.text(pdfTxt("Stejlepladsen. Stikprøve: billede før og efter omfortrådning."), 14, 24);
+  const W = 88, H = 100; let y = 32, any = false;
+  for (let i = 0; i < KS_IDS.length; i++) {
+    const id = KS_IDS[i], r = rec(id); if (!r.f && !r.e && !r.txt) continue;
+    if (y + H + 16 > 284) { doc.addPage(); y = 16; }
+    any = true;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(0); doc.text(pdfTxt(`Sted ${i + 1}${r.txt ? " - " + r.txt : ""}`), 14, y + 5); y += 8;
+    for (const [n, k] of [[0, "f"], [1, "e"]]) {
+      const x = 14 + n * (W + 6);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60); doc.text(pdfTxt(KS_CAP[k]), x, y + 4);
+      const b = await ksBlob(id, k);
+      if (!b) { doc.setDrawColor(190); doc.rect(x, y + 6, W, 30); doc.text(pdfTxt(r[k] ? "Billedet er ikke hentet" : "Intet billede"), x + 3, y + 14); continue; }
+      const url = await blobDataUrl(b), [w, h] = await imgSize(url), s = Math.min(W / w, H / h);
+      doc.addImage(url, "JPEG", x, y + 6, w * s, h * s, undefined, "FAST");
+    }
+    y += H + 12;
+  }
+  if (!any) { doc.setFontSize(11); doc.setTextColor(0); doc.text("Der er ikke taget billeder endnu.", 14, 36); }
+  pdfFooter(doc);
+  return doc.output("blob");
+}
+let deliverUrl;
+function deliver(blob, name, mime) {        // filen er klar: del/gem via telefonens delemenu, eller åbn den
+  if (deliverUrl) URL.revokeObjectURL(deliverUrl);
+  const file = new File([blob], name, { type: mime }); deliverUrl = URL.createObjectURL(file);
+  let share = false; try { share = !!(navigator.canShare && navigator.canShare({ files: [file] })); } catch (e) {}
+  $("#dbox").innerHTML = `<h3>Filen er klar</h3><p class="muted small">${esc(name)}</p>
+    ${share ? `<div class="btnrow"><button class="btn primary" id="dShare">Del / gem i Filer</button></div>` : ""}
+    <div class="btnrow"><a class="btn ${share ? "" : "primary"}" id="dOpen" href="${deliverUrl}" download="${esc(name)}" target="_blank" rel="noopener">${share ? "Åbn filen" : "Hent filen"}</a></div>
+    <div class="btnrow"><button class="btn small" id="dCancel">Luk</button></div>`;
+  $("#dialog").hidden = false;
+  $("#dCancel").onclick = () => { $("#dialog").hidden = true; };
+  if (share) $("#dShare").onclick = async () => { try { await navigator.share({ files: [file], title: name }); } catch (e) { if (e.name !== "AbortError") toast("Deling virkede ikke – prøv Åbn filen"); } };
 }
 /* ---------- Billeddokumentation (KS): 5 steder med billede før og efter ---------- */
 let ksDbP;
@@ -495,8 +591,8 @@ function viewKs() {
         : `<label class="ksimg">＋ Billede ${KS_CAP[k].toLowerCase()}<input type="file" accept="image/*" data-ksfile="${k}"></label>`}</div>`).join("")}</div>
       ${r.at && (r.f || r.e || r.txt) ? `<div class="umeta"><span>${esc(r.by || "")} · ${fmtAt(r.at)}</span></div>` : ""}
     </div>`; }).join("")}
-    <div class="btnrow noprint"><button class="btn" id="btnKsPrint">Udskriv / gem som PDF</button></div>`;
-  $("#btnKsPrint").onclick = () => { try { window.print(); } catch (e) { toast("Udskrift virker ikke her"); } };
+    <div class="btnrow noprint"><button class="btn primary" id="btnKsPdf">Lav PDF med billederne</button></div>`;
+  $("#btnKsPdf").onclick = () => { ksFlushTxt(); busy($("#btnKsPdf"), "Laver PDF …", async () => deliver(await ksPdf(), "Billeddokumentation KS område D.pdf", "application/pdf")); };
   for (const id of KS_IDS) for (const k of ["f", "e"]) if (rec(id)[k]) ksBlob(id, k).then((b) => {
     const el = document.querySelector(`[data-ks="${id}"] [data-ksbig="${k}"]`); if (!el) return;
     if (!b) { el.firstElementChild.textContent = "Billedet er ikke hentet endnu"; return; }
@@ -534,10 +630,10 @@ document.addEventListener("input", (e) => {
 });
 function csv() {
   const q = (s) => `"${String(s == null ? "" : s).replace(/"/g, '""').replace(/\r?\n/g, " ")}"`;
-  const head = ["Liste", "Opgang", "Etage", "Bolig", "Boligtype", "Termostat", "Termostattype", "Telestat på auto", "Anden fejl", "Note", "Tjekket af", "Tidspunkt"];
+  const head = ["Liste", "Opgang", "Etage", "Bolig", "Boligtype", "Termostat", "Termostattype", "Telestat på auto", "Anden fejl", "Note", "Fejl udbedret", "Hvad var fejlen", "Tjekket af", "Dato"];
   const rows = UNITS.map((u) => { const r = rec(u.id), s = status(u.id);
     return [s === "ok" ? "OK" : s === "fejl" ? "Fejl" : "Mangler", u.o, FLOORS[u.fi], uname(u), u.type,
-      r.s === "ok" ? "OK" : r.s === "fejl" ? "Ikke OK" : "", termLabel(r), r.ts ? "Ja" : "", r.a ? "Ja" : "", r.a ? r.n || "" : "", r.at ? r.by || "" : "", r.at ? fmtAt(r.at) : ""]; });
+      r.s === "ok" ? "OK" : r.s === "fejl" ? "Ikke OK" : "", termLabel(r), r.ts ? "Ja" : "", r.a ? "Ja" : "", r.a ? r.n || "" : "", fixed(r) ? "Ja" : "", fixed(r) ? r.ut || "" : "", r.at ? r.by || "" : "", fmtDate(r.at)]; });
   return [head, ...rows].map((r) => r.map(q).join(";")).join("\r\n");
 }
 function textReport() {
@@ -545,15 +641,12 @@ function textReport() {
     if (r.s === "fejl") bits.push("termostat ikke OK (" + termLabel(r) + ")");
     if (r.a) bits.push("anden fejl: " + (r.n || "ingen note"));
     if (status(u.id) === "fejl" && !r.ts) bits.push("telestat ikke tjekket");
-    if (status(u.id) === "" && r.s === "ok") bits.push("mangler telestat på auto");
-    if (status(u.id) === "" && r.ts) bits.push("mangler test af termostat");
+    if (fixed(r)) bits.push("fejl udbedret" + (r.ut ? ": " + r.ut : ""));
+    if (status(u.id) === "" && termOk(r)) bits.push("mangler telestat på auto");
+    if (status(u.id) === "" && r.ts && !termOk(r)) bits.push("mangler test af termostat");
     return `${u.o} ${uname(u)}${bits.length ? " – " + bits.join("; ") : ""}`; };
   const c = count(UNITS);
   return `Termostat i badekabiner – område D\n${c.ok} OK · ${c.fejl} fejl · ${c.mangler} mangler (${c.n} boliger)\n\nFEJL:\n${rowsFor("fejl").map(line).join("\n") || "-"}\n\nOK:\n${rowsFor("ok").map(line).join("\n") || "-"}\n\nMANGLER:\n${rowsFor("mangler").map(line).join("\n") || "-"}\n`;
-}
-function download(name, text, mime) {
-  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: mime })); a.download = name;
-  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 function nameDialog(u) {
   $("#dbox").innerHTML = `<h3>Ret navn – ${esc(u.o)} ${esc(FLOORS[u.fi])}</h3>
@@ -578,21 +671,25 @@ document.addEventListener("click", (e) => {
   else if (act === "neotherm" || act === "noname") change(id, { t: r.t === act ? "" : act });
   else if (act === "anden") change(id, { a: b.checked });
   else if (act === "tele") change(id, { ts: b.checked });
-  else if (act === "reset") change(id, { s: "", t: "", ts: false, a: false, n: "" });
+  else if (act === "udb") change(id, { u: b.checked });
+  else if (act === "reset") change(id, { s: "", t: "", ts: false, a: false, n: "", u: false, ut: "" });
   else return;
   // Opdatér kun det ene kort, så siden ikke hopper
   const tmp = document.createElement("div"); tmp.innerHTML = unitHtml(u); card.replaceWith(tmp.firstElementChild);
-  if (act === "anden" && b.checked) { const ta = document.querySelector(`.unit[data-id="${id}"] textarea`); if (ta) ta.focus(); }
+  if (act === "udb" && b.checked) { const ta = document.querySelector(`.unit[data-id="${id}"] textarea[data-act="utxt"]`); if (ta) ta.focus(); }
+  if (act === "anden" && b.checked) { const ta = document.querySelector(`.unit[data-id="${id}"] textarea[data-act="note"]`); if (ta) ta.focus(); }
   const c = count(UNITS.filter((x) => x.o === u.o)); $("#subtitle").textContent = `${c.ok + c.fejl} af ${c.n} tjekket`;
 });
+const NOTE_FIELD = { note: "n", utxt: "ut" };
 let noteT;
 document.addEventListener("input", (e) => {
-  if (e.target.dataset.act !== "note") return;
+  const f = NOTE_FIELD[e.target.dataset.act]; if (!f) return;
   const id = e.target.closest(".unit").dataset.id, v = e.target.value;
-  clearTimeout(noteT); noteT = setTimeout(() => change(id, { n: v }), 400);
+  clearTimeout(noteT); noteT = setTimeout(() => change(id, { [f]: v }), 400);
 });
 document.addEventListener("focusout", (e) => {
-  if (e.target.dataset && e.target.dataset.act === "note") { clearTimeout(noteT); const id = e.target.closest(".unit").dataset.id; if ((rec(id).n || "") !== e.target.value) change(id, { n: e.target.value }); }
+  const nf = e.target.dataset && NOTE_FIELD[e.target.dataset.act];
+  if (nf) { clearTimeout(noteT); const id = e.target.closest(".unit").dataset.id; if ((rec(id)[nf] || "") !== e.target.value) change(id, { [nf]: e.target.value }); }
   if (pendingRender) setTimeout(() => { if (pendingRender && $("#dialog").hidden) { pendingRender = false; render(true); } }, 400);
 });
 $("#btnBack").onclick = () => { go("hjem"); };
