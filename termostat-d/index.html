@@ -131,7 +131,7 @@ label.f{display:block;font-weight:700;margin:10px 0 4px}
 /* Termostat-tjek område D – midlertidig app til omfortrådning og funktionstest af termostat i badekabiner.
  * Deler data med holdet via samme Supabase-projekt og samme fælles kode som Stejlepladsen-appen.
  * Alle rækker ligger i tabellen "meta" med nøgler, der starter med "termD:" – de kan slettes samlet, når arbejdet er afleveret. */
-const APP_VERSION = "1.7";   // skal være det samme tal som i version.json – ret begge ved hver ny version
+const APP_VERSION = "1.8";   // skal være det samme tal som i version.json – ret begge ved hver ny version
 const CFG = {
   url: "https://zaktjknwboubewatrhlj.supabase.co",
   key: "sb_publishable_0cosreRI4xExKF1ZPzbhMg_tSB4Uozw",
@@ -422,9 +422,9 @@ function viewOpgang(o, filter) {
   $("#main").innerHTML = html;
 }
 function rowsFor(which) { return UNITS.filter((u) => (status(u.id) || "mangler") === which); }
-function tableHtml(which, list, noDate) {
+function tableHtml(which, list, report) {
   if (!list.length) return `<p class="muted">Ingen boliger på denne liste.</p>`;
-  const cols = TCOLS[which].filter((c) => !(noDate && c[0] === "Dato"));
+  const cols = report ? RCOLS[which] : TCOLS[which];
   return `<div class="tblwrap"><table><thead><tr>${cols.map((c) => `<th>${c[0]}</th>`).join("")}</tr></thead><tbody>${
     list.map((u) => `<tr>${cols.map((c) => `<td>${esc(c[1](u, rec(u.id)))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
@@ -447,6 +447,16 @@ function viewListe(which) {
     ${OPGANGE.map((o) => { const l = list.filter((u) => u.o === o); return l.length ? `<h2>${o} <span class="muted small">(${l.length})</span></h2>${tableHtml(which, l)}` : ""; }).join("") || `<p class="muted">Ingen boliger på denne liste.</p>`}
     <div class="btnrow noprint"><button class="btn" data-go="rapport">Rapport</button></div>`;
 }
+// Rapportens kolonner: de to punkter fra tjeklisten med flueben pr. bolig – uden "tjekket af" og tidspunkt
+const CHK = "✓";
+const C_TERM = ["Termostat genfortrådet og testet", (u, r) => (termOk(r) ? CHK : r.s === "fejl" ? "Ikke OK" : "")];
+const C_TELE = ["Telestat i auto", (u, r) => (r.ts ? CHK : "")];
+const RCOLS = {
+  fejl: [...C_BASE, C_TERM, ["Type", (u, r) => termLabel(r)], C_TELE, ["Anden fejl", (u, r) => (r.a ? r.n || "Ja (ingen note)" : "")]],
+  udb: [...C_BASE, C_TERM, C_TELE, ["Fejl fundet", (u, r) => faultText(r)], ["Hvad var fejlen", (u, r) => r.ut || ""]],
+  ok: [...C_BASE, C_TERM, C_TELE, ["Bemærkning", (u, r) => (fixed(r) ? "Fejl udbedret" : "")]],
+  mangler: [...C_BASE, C_TERM, C_TELE, ["Mangler", (u, r) => (termOk(r) ? "Telestat i auto" : r.ts ? "Test af termostat" : "Termostat og telestat")]]
+};
 function viewRapport() {
   head("Rapport", "Termostat-tjek område D", true);
   const c = count(UNITS), ok = rowsFor("ok"), fejl = rowsFor("fejl"), mangler = rowsFor("mangler"), udb = ok.filter((u) => fixed(rec(u.id)));
@@ -499,12 +509,20 @@ async function reportPdf() {
   const table = (title, head, body, color) => {
     if (y > 262) { doc.addPage(); y = 16; }
     if (title) { doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(0); doc.text(pdfTxt(title), 14, y + 6); y += 8; }
-    doc.autoTable({ startY: y, head: [head], body: body.map((r) => r.map(pdfTxt)), margin: { left: 14, right: 14, bottom: 16 }, theme: "grid",
+    doc.autoTable({ startY: y, head: [head], body: body.map((r) => r.map((v) => (v === CHK ? v : pdfTxt(v)))), margin: { left: 14, right: 14, bottom: 16 }, theme: "grid",
       styles: { font: "helvetica", fontSize: 9, cellPadding: 1.6, overflow: "linebreak", textColor: 20, lineColor: 190, lineWidth: 0.1 },
-      headStyles: { fillColor: color || [18, 53, 91], textColor: 255, fontStyle: "bold" }, rowPageBreak: "avoid" });
+      headStyles: { fillColor: color || [18, 53, 91], textColor: 255, fontStyle: "bold" }, rowPageBreak: "avoid",
+      didParseCell: (d) => { if (d.section === "body" && d.cell.raw === CHK) d.cell.text = [""]; },
+      didDrawCell: (d) => {                      // fluebenet tegnes som streg (skrifttypen har ikke tegnet)
+        if (d.section !== "body" || d.cell.raw !== CHK) return;
+        const x = d.cell.x + d.cell.width / 2, yy = d.cell.y + d.cell.height / 2;
+        doc.setDrawColor(11, 107, 47); doc.setLineWidth(0.55); doc.setLineCap("round"); doc.setLineJoin("round");
+        doc.lines([[1.2, 1.3], [2.3, -3]], x - 1.8, yy + 0.2, [1, 1], "S");
+        doc.setLineWidth(0.1);
+      } });
     y = doc.lastAutoTable.finalY + 5;
   };
-  const cols = (which) => TCOLS[which].filter((k) => k[0] !== "Dato");
+  const cols = (which) => RCOLS[which];
   const sect = (title, which, list, color) => table(`${title} (${list.length})`, cols(which).map((k) => k[0]), list.length ? list.map((u) => cols(which).map((k) => k[1](u, rec(u.id)))) : [["Ingen", ...cols(which).slice(1).map(() => "")]], color);
   table("", ["Opgang", "I alt", "OK", "Fejl", "Mangler"], OPGANGE.map((o) => { const k = count(UNITS.filter((u) => u.o === o)); return [o, k.n, k.ok, k.fejl, k.mangler]; }));
   sect("Fejl-liste", "fejl", fejl, [179, 0, 27]);

@@ -1,5 +1,5 @@
 // Termostat-tjek område D: hent altid nyeste fra nettet, brug gemt kopi uden dækning.
-const CACHE = "termostat-d-v8";
+const CACHE = "termostat-d-v9";
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(["./", "./index.html", "./jspdf.umd.min.js", "./jspdf.plugin.autotable.min.js"])).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => { e.waitUntil(self.clients.claim()); });
 self.addEventListener("fetch", (e) => {
