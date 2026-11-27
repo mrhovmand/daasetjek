@@ -131,7 +131,7 @@ label.f{display:block;font-weight:700;margin:10px 0 4px}
 /* Termostat-tjek område D – midlertidig app til omfortrådning og funktionstest af termostat i badekabiner.
  * Deler data med holdet via samme Supabase-projekt og samme fælles kode som Stejlepladsen-appen.
  * Alle rækker ligger i tabellen "meta" med nøgler, der starter med "termD:" – de kan slettes samlet, når arbejdet er afleveret. */
-const APP_VERSION = "1.9";   // skal være det samme tal som i version.json – ret begge ved hver ny version
+const APP_VERSION = "1.10";   // skal være det samme tal som i version.json – ret begge ved hver ny version
 const CFG = {
   url: "https://zaktjknwboubewatrhlj.supabase.co",
   key: "sb_publishable_0cosreRI4xExKF1ZPzbhMg_tSB4Uozw",
@@ -381,8 +381,10 @@ function viewHome() {
     <div class="btnrow"><button class="btn primary" data-go="rapport">Rapport</button></div>
     <p class="muted small">Opgave i hver bolig: omfortråd termostaten i badekabinen, test at den tænder og slukker, og sørg for at telestaten står på auto, når I går. En bolig er først OK, når både termostat og telestat er krydset af.
     Boligernes navne (tv./th. og numre) er foreslåede ud fra tegningen – tryk <b>Ret navn</b>, hvis de er byttet om.</p>
+    <p class="muted small">Version ${APP_VERSION} · <button class="ulink" id="btnReload">Hent nyeste version</button></p>
     <p class="muted small">Logget på som ${esc(MY_NAME)}. <button class="ulink" id="btnLogout">${SESSION ? "Skift navn / log af" : "Forbind til holdet"}</button></p>`;
   updateSync();
+  $("#btnReload").onclick = () => location.reload();
   $("#btnLogout").onclick = () => { SESSION = null; LOCAL_ONLY = false; store.set("session", null); store.set("local", false); render(); };
 }
 function unitHtml(u) {
