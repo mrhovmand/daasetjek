@@ -60,6 +60,7 @@ h2{font-size:20px;margin:22px 4px 8px}
 .utype{font-size:14px;color:var(--muted);margin-bottom:8px}
 .two{display:flex;gap:10px}
 .pick{flex:1;min-height:62px;border-radius:14px;border:2px solid var(--line);background:#fff;font-weight:700;font-size:19px}
+.pick.ok{flex:1.6;font-size:17px;line-height:1.2;padding:6px 8px}
 .pick.ok.on{background:var(--green);border-color:var(--green);color:#fff}
 .pick.fejl.on{background:var(--red);border-color:var(--red);color:#fff}
 .sub2{margin-top:10px;padding:10px;border-radius:12px;background:var(--redbg)}
@@ -129,7 +130,7 @@ label.f{display:block;font-weight:700;margin:10px 0 4px}
 /* Termostat-tjek område D – midlertidig app til omfortrådning og funktionstest af termostat i badekabiner.
  * Deler data med holdet via samme Supabase-projekt og samme fælles kode som Stejlepladsen-appen.
  * Alle rækker ligger i tabellen "meta" med nøgler, der starter med "termD:" – de kan slettes samlet, når arbejdet er afleveret. */
-const APP_VERSION = "1.6";   // skal være det samme tal som i version.json – ret begge ved hver ny version
+const APP_VERSION = "1.7";   // skal være det samme tal som i version.json – ret begge ved hver ny version
 const CFG = {
   url: "https://zaktjknwboubewatrhlj.supabase.co",
   key: "sb_publishable_0cosreRI4xExKF1ZPzbhMg_tSB4Uozw",
@@ -390,7 +391,7 @@ function unitHtml(u) {
     <div class="uhead"><div class="uname">${esc(uname(u))}</div><button class="ulink" data-act="name">Ret navn</button></div>
     <div class="utype">${esc(u.kind)} · ${esc(u.type)} · tegn. side ${u.side}</div>
     <div class="two">
-      <button class="pick ok ${r.s === "ok" ? "on" : ""}" data-act="ok">✓ Termostat OK</button>
+      <button class="pick ok ${r.s === "ok" ? "on" : ""}" data-act="ok">✓ Termostat genfortrådet og testet OK</button>
       <button class="pick fejl ${fejl ? "on" : ""}" data-act="fejl">✗ Ikke OK</button>
     </div>
     ${fejl ? `<div class="sub2"><div class="lbl">Hvilken termostat sidder der?</div>
@@ -457,7 +458,8 @@ function viewRapport() {
     <h2>Fejl-liste (${fejl.length})</h2>${tableHtml("fejl", fejl, true)}
     ${udb.length ? `<h2>Udbedrede fejl (${udb.length})</h2>${tableHtml("udb", udb, true)}` : ""}
     <h2>OK-liste (${ok.length})</h2>${tableHtml("ok", ok, true)}
-    ${mangler.length ? `<h2>Mangler at blive tjekket (${mangler.length})</h2>${tableHtml("mangler", mangler, true)}` : ""}`;
+    ${mangler.length ? `<h2>Mangler at blive tjekket (${mangler.length})</h2>${tableHtml("mangler", mangler, true)}` : ""}
+    <p class="muted small">${ksAny() ? "KS-billederne (før og efter) kommer med bagerst i PDF-rapporten." : "Der er ikke taget KS-billeder endnu."}</p>`;
   $("#btnPdf").onclick = () => busy($("#btnPdf"), "Laver PDF …", async () => deliver(await reportPdf(), "Termostat-tjek område D.pdf", "application/pdf"));
   $("#btnCsv").onclick = () => deliver(new Blob(["\ufeff" + csv()], { type: "text/csv;charset=utf-8" }), "Termostat-tjek område D.csv", "text/csv");
   $("#btnCopy").onclick = async () => { try { await navigator.clipboard.writeText(textReport()); toast("Kopieret"); } catch (e) { toast("Kunne ikke kopiere"); } };
@@ -489,7 +491,7 @@ async function reportPdf() {
   let y = 18;
   doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(18, 53, 91); doc.text(pdfTxt("Termostat i badekabiner - område D"), 14, y); y += 7;
   doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60);
-  for (const l of doc.splitTextToSize(pdfTxt("Stejlepladsen. Omfortrådning og funktionstest af termostat (tænder/slukker) samt kontrol af, at telestaten står på auto."), 182)) { doc.text(l, 14, y); y += 5; }
+  for (const l of doc.splitTextToSize(pdfTxt("Stejlepladsen. Genfortrådning og funktionstest af termostat (tænder/slukker) samt kontrol af, at telestaten står på auto."), 182)) { doc.text(l, 14, y); y += 5; }
   doc.setTextColor(0); doc.setFontSize(11); y += 2;
   doc.text(pdfTxt("Status: " + statusLine(c, udb.length)), 14, y); y += 5.5;
   doc.setFontSize(10); doc.text(pdfTxt(faultLine(fejl)), 14, y); y += 4;
@@ -508,20 +510,23 @@ async function reportPdf() {
   if (udb.length) sect("Udbedrede fejl", "udb", udb, [138, 75, 0]);
   sect("OK-liste", "ok", ok, [11, 107, 47]);
   if (mangler.length) sect("Mangler at blive tjekket", "mangler", mangler, [74, 85, 98]);
+  if (ksAny()) {
+    doc.addPage();
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.setTextColor(18, 53, 91); doc.text(pdfTxt("Billeddokumentation (KS)"), 14, 18);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60); doc.text(pdfTxt("Stikprøve: billede før og efter genfortrådning."), 14, 24);
+    await ksDraw(doc, 30);
+  }
   pdfFooter(doc);
   return doc.output("blob");
 }
 const blobDataUrl = (b) => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = () => rej(f.error); f.readAsDataURL(b); });
 const imgSize = (url) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res([i.naturalWidth, i.naturalHeight]); i.onerror = () => rej(new Error("Et billede kunne ikke læses")); i.src = url; });
-async function ksPdf() {
-  const JsPDF = await pdfLib(), doc = new JsPDF({ unit: "mm", format: "a4" });
-  doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(18, 53, 91); doc.text(pdfTxt("Billeddokumentation (KS) - termostat i badekabiner, område D"), 14, 18);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60); doc.text(pdfTxt("Stejlepladsen. Stikprøve: billede før og efter omfortrådning."), 14, 24);
-  const W = 88, H = 100; let y = 32, any = false;
+const ksAny = () => KS_IDS.some((id) => { const r = rec(id); return r.f || r.e || r.txt; });
+async function ksDraw(doc, y) {              // tegner de fem steder med før/efter-billeder fra højden y
+  const W = 88, H = 100;
   for (let i = 0; i < KS_IDS.length; i++) {
     const id = KS_IDS[i], r = rec(id); if (!r.f && !r.e && !r.txt) continue;
     if (y + H + 16 > 284) { doc.addPage(); y = 16; }
-    any = true;
     doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(0); doc.text(pdfTxt(`Sted ${i + 1}${r.txt ? " - " + r.txt : ""}`), 14, y + 5); y += 8;
     for (const [n, k] of [[0, "f"], [1, "e"]]) {
       const x = 14 + n * (W + 6);
@@ -533,7 +538,12 @@ async function ksPdf() {
     }
     y += H + 12;
   }
-  if (!any) { doc.setFontSize(11); doc.setTextColor(0); doc.text("Der er ikke taget billeder endnu.", 14, 36); }
+}
+async function ksPdf() {
+  const JsPDF = await pdfLib(), doc = new JsPDF({ unit: "mm", format: "a4" });
+  doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(18, 53, 91); doc.text(pdfTxt("Billeddokumentation (KS) - termostat i badekabiner, område D"), 14, 18);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60); doc.text(pdfTxt("Stejlepladsen. Stikprøve: billede før og efter genfortrådning."), 14, 24);
+  if (ksAny()) await ksDraw(doc, 32); else { doc.setFontSize(11); doc.setTextColor(0); doc.text("Der er ikke taget billeder endnu.", 14, 36); }
   pdfFooter(doc);
   return doc.output("blob");
 }
