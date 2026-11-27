@@ -32,6 +32,7 @@ h2{font-size:20px;margin:22px 4px 8px}
 .muted{color:var(--muted)}.small{font-size:15px}
 .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:60px;border-radius:14px;border:2px solid var(--blue);background:#fff;color:var(--blue);font-weight:700;font-size:19px;padding:8px 14px;text-align:center}
 .btn.primary{background:var(--blue);color:#fff}
+a.btn{text-decoration:none}
 .btn.small{min-height:48px;font-size:17px}
 .btn:active,.tile:active{filter:brightness(.92)}
 .btnrow{display:flex;gap:10px;margin:10px 0}.btnrow>*{flex:1}
@@ -704,7 +705,7 @@ document.addEventListener("focusout", (e) => {
 });
 $("#btnBack").onclick = () => { go("hjem"); };
 $("#btnMenu").onclick = () => go("liste/fejl");
-window.addEventListener("hashchange", () => { render(); window.scrollTo(0, 0); });
+window.addEventListener("hashchange", () => { $("#dialog").hidden = true; render(); window.scrollTo(0, 0); });
 window.addEventListener("online", () => syncSoon(400));
 window.addEventListener("offline", updateSync);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") syncSoon(300); });
