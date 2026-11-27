@@ -131,7 +131,7 @@ label.f{display:block;font-weight:700;margin:10px 0 4px}
 /* Termostat-tjek område D – midlertidig app til omfortrådning og funktionstest af termostat i badekabiner.
  * Deler data med holdet via samme Supabase-projekt og samme fælles kode som Stejlepladsen-appen.
  * Alle rækker ligger i tabellen "meta" med nøgler, der starter med "termD:" – de kan slettes samlet, når arbejdet er afleveret. */
-const APP_VERSION = "1.10";   // skal være det samme tal som i version.json – ret begge ved hver ny version
+const APP_VERSION = "1.11";   // skal være det samme tal som i version.json – ret begge ved hver ny version
 const CFG = {
   url: "https://zaktjknwboubewatrhlj.supabase.co",
   key: "sb_publishable_0cosreRI4xExKF1ZPzbhMg_tSB4Uozw",
@@ -140,6 +140,19 @@ const CFG = {
   photo: "termD-"          // KS-billeder ligger i den fælles billedmappe som termD-ks1-f.jpg (før) / -e.jpg (efter)
 };
 const KS_IDS = ["ks1", "ks2", "ks3", "ks4", "ks5"];
+const SHARED_IDS = [...KS_IDS, "obs"];        // delte poster, der ikke er boliger
+// Generelle observationer – står øverst i rapporten og kan rettes på rapportsiden
+const DEFAULT_OBS = `Ved gennemgangen har vi set de samme fejl gå igen i boligerne.
+
+I næsten alle boliger sad kun få af ledningernes kobbertråde under klemmerne i termostaten, mens resten strittede ud til siderne. Vi har set helt ned til to-tre kobbertråde, der var tilsluttet. Nogle steder sad der slet ingen under klemmeskruen, og forbindelsen virkede kun, fordi trådene tilfældigt var presset op mod klemmen. Det har derfor været nødvendigt at demontere ledningerne, klippe de løse kobbertråde af, afisolere ledningerne igen og genmontere dem i klemmerne.
+
+I nogle termostater sad ledningerne i de forkerte klemmer. For eksempel sad nullen i den klemme, der er beregnet til natsænkning.
+
+Vi har også set løse kobbertråde fra fasen og fra ledningen til telestaten røre hinanden. Så fik telestaten strøm hele tiden og stod åben, uanset hvordan termostaten var indstillet.
+
+Enkelte steder har kobbertråde fra fase og nul rørt hinanden. Da der blev sat strøm på boligen, sprang sikringerne ved hovedmåleren i kælderen, og kortslutningen brændte de løse tråde over. De termostater var sorte indvendigt, da vi skilte dem ad. Det forklarer de kortslutninger, vi tidligere har oplevet ved tilslutning, og som var væk bagefter.
+
+Tre termostater var defekte og er skiftet. Én havde for lav udgangsspænding, og to gav ingen spænding på udgangen.`;
 
 /* ---------- Boliger (aflæst af Artelia ISP1_K07_L1XX_H04_EXX_N931 rev. E, oversigtsplaner side 3–8) ---------- */
 const FLOORS = ["Stue", "1. sal", "2. sal", "3. sal", "4. sal", "5. sal"];
@@ -183,6 +196,7 @@ let MY_NAME = store.get("name", "");
 let LOCAL_ONLY = store.get("local", false);
 const SYNC = { busy: false, again: false, last: null, error: null };
 const rec = (id) => DATA[id] || {};
+const obsText = () => (typeof rec("obs").txt === "string" ? rec("obs").txt : DEFAULT_OBS);
 const saveData = () => { store.set("data", DATA); store.set("dirty", [...DIRTY]); };
 
 function status(id) {            // "ok" | "fejl" | "" (mangler)
@@ -255,7 +269,7 @@ async function syncNow() {
       for (const row of rows) {
         if (!max || parseTs(row.updated_at) > parseTs(max)) max = row.updated_at;
         const id = row.key.slice(CFG.prefix.length);
-        if ((!UNIT.has(id) && !KS_IDS.includes(id)) || row.deleted || !row.value) continue;
+        if ((!UNIT.has(id) && !SHARED_IDS.includes(id)) || row.deleted || !row.value) continue;
         const loc = rec(id), rem = row.value;
         if (DIRTY.has(id) && (loc.at || "") >= (rem.at || "")) continue;      // min egen er nyere
         if (JSON.stringify(loc) !== JSON.stringify(rem)) { DATA[id] = rem; DIRTY.delete(id); changed = true; }
@@ -465,6 +479,9 @@ function viewRapport() {
   $("#main").innerHTML = `
     <div class="btnrow"><button class="btn primary" id="btnPdf">Lav PDF-rapport</button></div>
     <div class="btnrow"><button class="btn small" id="btnCsv">Excel-fil (CSV)</button><button class="btn small" id="btnCopy">Kopiér som tekst</button></div>
+    <h2>Generelle observationer</h2>
+    <textarea id="obsTxt" style="min-height:220px;font-size:16px" placeholder="Tekst til kunden – kommer øverst i rapporten">${esc(obsText())}</textarea>
+    <p class="muted small">Teksten kommer øverst i PDF-rapporten. Ret den her – den gemmes selv og deles med holdet. Tomt felt = ingen tekst i rapporten.</p>
     <div class="card"><b>Status:</b> ${esc(statusLine(c, udb.length))}<br><span class="small">${esc(faultLine(fejl))}</span></div>
     <div class="tblwrap"><table><thead><tr><th>Opgang</th><th>Boliger</th><th>OK</th><th>Fejl</th><th>Mangler</th></tr></thead><tbody>${
       OPGANGE.map((o) => { const k = count(UNITS.filter((u) => u.o === o)); return `<tr><td>${o}</td><td>${k.n}</td><td>${k.ok}</td><td>${k.fejl}</td><td>${k.mangler}</td></tr>`; }).join("")}</tbody></table></div>
@@ -473,7 +490,10 @@ function viewRapport() {
     <h2>OK-liste (${ok.length})</h2>${tableHtml("ok", ok, true)}
     ${mangler.length ? `<h2>Mangler at blive tjekket (${mangler.length})</h2>${tableHtml("mangler", mangler, true)}` : ""}
     <p class="muted small">${ksAny() ? "KS-billederne (før og efter) kommer med bagerst i PDF-rapporten." : "Der er ikke taget KS-billeder endnu."}</p>`;
-  $("#btnPdf").onclick = () => busy($("#btnPdf"), "Laver PDF …", async () => deliver(await reportPdf(), "Termostat-tjek område D.pdf", "application/pdf"));
+  let obsT; const saveObs = () => { clearTimeout(obsT); const v = $("#obsTxt").value; if (v !== obsText()) change("obs", { txt: v }); };
+  $("#obsTxt").oninput = () => { clearTimeout(obsT); obsT = setTimeout(saveObs, 600); };
+  $("#obsTxt").onblur = saveObs;
+  $("#btnPdf").onclick = () => busy($("#btnPdf"), "Laver PDF …", async () => { const o = $("#obsTxt"); if (o && o.value !== obsText()) change("obs", { txt: o.value }); deliver(await reportPdf(), "Termostat-tjek område D.pdf", "application/pdf"); });
   $("#btnCsv").onclick = () => deliver(new Blob(["\ufeff" + csv()], { type: "text/csv;charset=utf-8" }), "Termostat-tjek område D.csv", "text/csv");
   $("#btnCopy").onclick = async () => { try { await navigator.clipboard.writeText(textReport()); toast("Kopieret"); } catch (e) { toast("Kunne ikke kopiere"); } };
 }
@@ -505,7 +525,18 @@ async function reportPdf() {
   doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(18, 53, 91); doc.text(pdfTxt("Termostat i badekabiner - område D"), 14, y); y += 7;
   doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60);
   for (const l of doc.splitTextToSize(pdfTxt("Stejlepladsen. Genfortrådning og funktionstest af termostat (tænder/slukker) samt kontrol af, at telestaten står på auto."), 182)) { doc.text(l, 14, y); y += 5; }
-  doc.setTextColor(0); doc.setFontSize(11); y += 2;
+  const obs = obsText().trim();
+  if (obs) {
+    y += 3; doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(0); doc.text("Generelle observationer", 14, y); y += 6;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(20);
+    for (const para of obs.split(/\n\s*\n/)) {
+      for (const l of doc.splitTextToSize(pdfTxt(para.replace(/\s*\n\s*/g, " ")), 182)) { if (y > 280) { doc.addPage(); y = 16; } doc.text(l, 14, y); y += 4.8; }
+      y += 2.4;
+    }
+    y += 1;
+  }
+  if (y > 262) { doc.addPage(); y = 16; }
+  doc.setFont("helvetica", "normal"); doc.setTextColor(0); doc.setFontSize(11); y += 2;
   doc.text(pdfTxt("Status: " + statusLine(c, udb.length)), 14, y); y += 5.5;
   doc.setFontSize(10); doc.text(pdfTxt(faultLine(fejl)), 14, y); y += 4;
   const table = (title, head, body, color) => {
