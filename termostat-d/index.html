@@ -131,7 +131,7 @@ label.f{display:block;font-weight:700;margin:10px 0 4px}
 /* Termostat-tjek område D – midlertidig app til omfortrådning og funktionstest af termostat i badekabiner.
  * Deler data med holdet via samme Supabase-projekt og samme fælles kode som Stejlepladsen-appen.
  * Alle rækker ligger i tabellen "meta" med nøgler, der starter med "termD:" – de kan slettes samlet, når arbejdet er afleveret. */
-const APP_VERSION = "1.8";   // skal være det samme tal som i version.json – ret begge ved hver ny version
+const APP_VERSION = "1.9";   // skal være det samme tal som i version.json – ret begge ved hver ny version
 const CFG = {
   url: "https://zaktjknwboubewatrhlj.supabase.co",
   key: "sb_publishable_0cosreRI4xExKF1ZPzbhMg_tSB4Uozw",
@@ -546,7 +546,7 @@ async function ksDraw(doc, y) {              // tegner de fem steder med før/ef
   for (let i = 0; i < KS_IDS.length; i++) {
     const id = KS_IDS[i], r = rec(id); if (!r.f && !r.e && !r.txt) continue;
     if (y + H + 16 > 284) { doc.addPage(); y = 16; }
-    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(0); doc.text(pdfTxt(`Sted ${i + 1}${r.txt ? " - " + r.txt : ""}`), 14, y + 5); y += 8;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(0); if (r.txt) doc.text(pdfTxt(r.txt), 14, y + 5); y += r.txt ? 8 : 2;
     for (const [n, k] of [[0, "f"], [1, "e"]]) {
       const x = 14 + n * (W + 6);
       doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60); doc.text(pdfTxt(KS_CAP[k]), x, y + 4);
